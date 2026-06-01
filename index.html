@@ -633,8 +633,13 @@ function calcAndRender(){
       var totalDistSoFar = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
       var segProfit = realizedNow - totalDistSoFar;
 
+      // 比例權重 = 本金 + 累計已分配獲利（權益），讓賺到的錢也參與下一段
       var shares = {}, totalShares = 0;
-      D.members.forEach(function(m){ shares[m.id]=principal[m.id]; totalShares+=principal[m.id]; });
+      D.members.forEach(function(m){
+        var equity = principal[m.id] + profit[m.id];
+        shares[m.id] = equity;
+        totalShares += equity;
+      });
 
       settled[ev.id] = {segProfit:segProfit, shares:shares, totalShares:totalShares};
 
@@ -655,7 +660,11 @@ function calcAndRender(){
   var totalRealizedDist = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
   var lastSeg = (realized - totalRealizedDist) + unrealized;
   var lastShares = {}, lastTotal = 0;
-  D.members.forEach(function(m){ lastShares[m.id]=principal[m.id]; lastTotal+=principal[m.id]; });
+  D.members.forEach(function(m){
+    var equity = principal[m.id] + profit[m.id];
+    lastShares[m.id] = equity;
+    lastTotal += equity;
+  });
   if(lastTotal>0){
     D.members.forEach(function(m){ profit[m.id] += lastSeg*(lastShares[m.id]/lastTotal); });
   }
