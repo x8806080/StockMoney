@@ -38,7 +38,13 @@
       "date": "2026-01-01",
       "realizedAtEvent": 0,
       "isInitial": false,
-      "txns": []
+      "txns": [
+        {
+          "memberId": "m1",
+          "type": "deposit",
+          "amount": 0
+        }
+      ]
     }
   ]
 }
