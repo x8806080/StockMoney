@@ -55,6 +55,13 @@
           "amount": 10000
         }
       ]
+    },
+    {
+      "id": "mpuq2v9n2ga",
+      "date": "2026-06-01",
+      "realizedAtEvent": 0,
+      "isInitial": false,
+      "txns": []
     }
   ]
 }
