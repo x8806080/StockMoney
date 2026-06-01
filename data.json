@@ -86,6 +86,13 @@
           "amount": 100800
         }
       ]
+    },
+    {
+      "id": "mpv19ytjf3v",
+      "date": "2026-06-01",
+      "realizedAtEvent": 0,
+      "isInitial": false,
+      "txns": []
     }
   ]
 }
