@@ -30,11 +30,6 @@
           "memberId": "m1",
           "type": "deposit",
           "amount": 200000
-        },
-        {
-          "memberId": "m1",
-          "type": "deposit",
-          "amount": 0
         }
       ]
     }
