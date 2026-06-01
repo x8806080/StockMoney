@@ -210,6 +210,17 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 </div>
 
 <script>
+/* ════════════════════════════════════════════════════════
+ *  ★★★ 設定區：填入你的 GitHub 資訊 ★★★
+ *  填好後三台裝置都不用再設定，直接同步。
+ * ════════════════════════════════════════════════════════ */
+const CONFIG = {
+  REPO: "x8806080/StockMoney",   // ← 你的 owner/repo（已預填，可改）
+  TOKEN: "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"                       // ← 把完整 token 貼在這裡
+};
+const CONFIG_TOKEN = CONFIG.TOKEN;
+/* ════════════════════════════════════════════════════════ */
+
 // ── 工具 ──────────────────────────────────────
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function today(){ return new Date().toISOString().split('T')[0]; }
@@ -219,8 +230,8 @@ function cc(n){ return n>0?'profit':n<0?'loss':'neutral'; }
 
 // ── GitHub API 同步（存到你的 repo 的 data.json）──
 // 設定：owner/repo + Personal Access Token
-let GH_REPO  = localStorage.getItem('gh_repo')  || '';   // 格式 owner/repo
-let GH_TOKEN = localStorage.getItem('gh_token') || '';
+let GH_REPO  = CONFIG.REPO || localStorage.getItem('gh_repo')  || '';
+let GH_TOKEN = CONFIG_TOKEN || localStorage.getItem('gh_token') || '';
 let GH_PATH  = 'data.json';
 let GH_SHA   = localStorage.getItem('gh_sha')   || '';   // 檔案版本 sha
 let syncTimer = null;
