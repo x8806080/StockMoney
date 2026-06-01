@@ -40,7 +40,7 @@
       "isInitial": false,
       "txns": [
         {
-          "memberId": "m1",
+          "memberId": "m2",
           "type": "deposit",
           "amount": 0
         }
