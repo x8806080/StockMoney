@@ -129,6 +129,15 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
   <div class="sync-dot" id="syncDot"></div>
   <div class="sync-text" id="syncText">同步中...</div>
   <div class="sync-time" id="syncTime"></div>
+  <button class="btn-s" id="btnSync" onclick="syncNow()">↻ 同步</button>
+  <button class="btn-s red" onclick="showUrlBar()">⚙ 設定</button>
+</div>
+
+<div class="url-bar" id="urlBar">
+  <input type="text" id="ghRepo" placeholder="owner/repo（例：x8806080/StockMoney）" style="flex:1;min-width:180px">
+  <input type="password" id="ghToken" placeholder="GitHub Token" style="flex:1;min-width:180px">
+  <button class="btn-ok" id="btnOk" onclick="applyConfig()">確認</button>
+  <button class="btn-cancel" onclick="hideUrlBar()">取消</button>
 </div>
 
 <div class="top-section">
@@ -196,7 +205,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
  * ════════════════════════════════════════════════════════ */
 const CONFIG = {
   REPO: "x8806080/StockMoney",   // ← 你的 owner/repo（已預填，可改）
-  TOKEN: "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"                       // ← 把完整 token 貼在這裡
+  TOKEN: ""                       // ← 把完整 token 貼在這裡
 };
 const CONFIG_TOKEN = CONFIG.TOKEN;
 /* ════════════════════════════════════════════════════════ */
@@ -223,6 +232,31 @@ function setSyncStatus(state, text, time){
 }
 
 function syncNow(){ loadFromGitHub(); }
+
+function showUrlBar(){
+  document.getElementById('urlBar').classList.add('show');
+  document.getElementById('ghRepo').value = GH_REPO;
+  document.getElementById('ghToken').value = GH_TOKEN;
+  document.getElementById('ghRepo').focus();
+}
+function hideUrlBar(){ document.getElementById('urlBar').classList.remove('show'); }
+
+async function applyConfig(){
+  var repo = document.getElementById('ghRepo').value.trim();
+  var token = document.getElementById('ghToken').value.trim();
+  if(!repo.includes('/') || token.length < 10){
+    alert('請輸入正確的 owner/repo 和 Token');
+    return;
+  }
+  GH_REPO = repo; GH_TOKEN = token;
+  GH_SHA = '';  // 換設定時清掉舊 sha
+  localStorage.setItem('gh_repo', repo);
+  localStorage.setItem('gh_token', token);
+  localStorage.removeItem('gh_sha');
+  hideUrlBar();
+  setSyncStatus('ing', '連線中...');
+  await loadFromGitHub();
+}
 
 function ghApiUrl(){
   return 'https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_PATH;
@@ -346,7 +380,7 @@ function init(){
   if(GH_REPO && GH_TOKEN){
     loadFromGitHub();
   } else {
-    setSyncStatus('err', '尚未在程式碼填入 Token', '');
+    setSyncStatus('err', '請按右上角「⚙ 設定」填入 Token', '');
   }
 }
 
