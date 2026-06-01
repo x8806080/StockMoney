@@ -79,13 +79,7 @@
       "date": "2026-05-22",
       "realizedAtEvent": 161963,
       "isInitial": false,
-      "txns": [
-        {
-          "memberId": "mpupz3oymdp",
-          "type": "deposit",
-          "amount": 100800
-        }
-      ],
+      "txns": [],
       "unrealizedAtEvent": 0
     }
   ]
