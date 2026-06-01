@@ -73,6 +73,13 @@
           "amount": 4000
         }
       ]
+    },
+    {
+      "id": "mpuqfm90wgr",
+      "date": "2026-06-01",
+      "realizedAtEvent": 0,
+      "isInitial": false,
+      "txns": []
     }
   ]
 }
