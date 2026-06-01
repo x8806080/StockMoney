@@ -32,6 +32,13 @@
           "amount": 200000
         }
       ]
+    },
+    {
+      "id": "mpupzrso4qt",
+      "date": "2026-06-01",
+      "realizedAtEvent": 0,
+      "isInitial": false,
+      "txns": []
     }
   ]
 }
