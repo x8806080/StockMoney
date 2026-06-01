@@ -42,6 +42,15 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 .setup-card b{color:#78350f}
 .how-it-works{background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.82rem;color:#0c4a6e;line-height:1.7}
 .how-it-works strong{display:block;margin-bottom:4px}
+
+.collapse-head{display:flex;align-items:center;gap:10px;background:white;border-radius:12px;padding:13px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;user-select:none}
+.collapse-head:hover{background:#fafafa}
+.ch-arrow{color:var(--muted);font-size:.8rem;transition:transform .2s}
+.ch-arrow.open{transform:rotate(90deg)}
+.ch-title{font-size:.92rem;font-weight:700;color:var(--primary);flex:0 0 auto}
+.collapse-head .badge{flex:1;justify-self:start}
+.collapse-body{display:none;margin-bottom:16px}
+.collapse-body.open{display:block}
 .members-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .members-bar h2{font-size:.9rem;font-weight:700;color:var(--primary);flex:1}
 .btn-add-member{background:var(--accent);color:white;border:none;padding:7px 14px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer}
@@ -165,14 +174,25 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
   每次加碼/減碼時新增事件，填入<b>當下帳戶總損益</b>（已實現+未實現）。系統先用加碼前比例結算前段（含未實現），新錢才從乾淨基期進入下一段。
 </div>
 
-<div class="members-bar">
-  <h2>👥 投資成員</h2>
-  <button class="btn-add-member" onclick="addMember()">＋ 新增成員</button>
+<div class="collapse-head" id="memHead" onclick="toggleSection('mem')">
+  <span class="ch-arrow open" id="memArrow">▶</span>
+  <span class="ch-title">👥 投資成員</span>
+  <span class="badge" id="memCount">0 人</span>
+  <button class="btn-add-member" onclick="event.stopPropagation();addMember()">＋ 新增</button>
 </div>
-<div class="members-grid" id="membersGrid"></div>
+<div class="collapse-body open" id="memBody">
+  <div class="members-grid" id="membersGrid"></div>
+</div>
 
-<div class="section-title">📅 加碼 / 減碼事件 <span class="badge" id="eventCount">0 個</span></div>
-<div id="eventsContainer"></div>
+<div class="collapse-head" id="evHead" onclick="toggleSection('ev')">
+  <span class="ch-arrow open" id="evArrow">▶</span>
+  <span class="ch-title">📅 加碼 / 減碼事件</span>
+  <span class="badge" id="eventCount">0 個</span>
+  <button class="btn-add-member" onclick="event.stopPropagation();addEvent()">＋ 新增</button>
+</div>
+<div class="collapse-body open" id="evBody">
+  <div id="eventsContainer"></div>
+</div>
 
 <div class="final-card">
   <div class="final-hd">📊 最終損益分配結果</div>
@@ -379,9 +399,21 @@ function saveAndRender(){
 }
 
 // ── Render ────────────────────────────────────
+var sectionState = { mem:true, ev:true };
+function toggleSection(which){
+  sectionState[which] = !sectionState[which];
+  if(which==='mem'){
+    document.getElementById('memBody').classList.toggle('open', sectionState.mem);
+    document.getElementById('memArrow').classList.toggle('open', sectionState.mem);
+  } else {
+    document.getElementById('evBody').classList.toggle('open', sectionState.ev);
+    document.getElementById('evArrow').classList.toggle('open', sectionState.ev);
+  }
+}
 function renderAll(){ renderMembers(); renderEvents(); calcAndRender(); }
 
 function renderMembers(){
+  const mc=document.getElementById('memCount'); if(mc) mc.textContent=D.members.length+' 人';
   const g = document.getElementById('membersGrid');
   g.innerHTML = '';
   D.members.forEach(function(m){
