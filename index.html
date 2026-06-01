@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>損益分配計算器</title>
+<style>
+:root{--primary:#1c2b3a;--accent:#00c896;--danger:#ff4757;--bg:#eef1f5;--card:#fff;--border:#e2e8f0;--text:#1e2d3d;--muted:#8896a7}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Helvetica Neue",sans-serif;background:var(--bg);color:var(--text);padding:16px}
+.container{max-width:900px;margin:0 auto}
+h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padding:16px 0 20px}
+.top-section{background:var(--primary);border-radius:16px;padding:20px;margin-bottom:16px;color:white}
+.top-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.input-group label{display:block;font-size:.72rem;opacity:.55;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.input-group input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:10px 12px;font-size:1.05rem;color:white;font-weight:600}
+.input-group input:focus{outline:none;border-color:var(--accent)}
+.input-group input::placeholder{color:rgba(255,255,255,.3)}
+.top-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-box{background:rgba(255,255,255,.07);border-radius:10px;padding:12px;text-align:center}
+.stat-label{font-size:.68rem;opacity:.5;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.stat-value{font-size:1.25rem;font-weight:700}
+.profit{color:var(--accent)}.loss{color:var(--danger)}.neutral{color:white}
+.sync-bar{background:white;border-radius:12px;padding:10px 16px;margin-bottom:8px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:.82rem;flex-wrap:wrap}
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--muted)}
+.sync-dot.ok{background:var(--accent)}.sync-dot.err{background:var(--danger)}.sync-dot.ing{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-text{flex:1;color:var(--muted);font-size:.8rem;min-width:100px}
+.sync-time{font-size:.72rem;color:var(--muted)}
+.btn-s{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:white;font-size:.78rem;cursor:pointer;color:var(--text);white-space:nowrap}
+.btn-s:hover{background:#f0fdf8;border-color:var(--accent);color:var(--accent)}
+.btn-s.red:hover{background:#fff5f5;border-color:var(--danger);color:var(--danger)}
+.url-bar{background:white;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:none;gap:8px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);flex-wrap:wrap}
+.url-bar.show{display:flex}
+.url-bar input{flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:.85rem}
+.url-bar input:focus{outline:none;border-color:var(--accent)}
+.btn-ok{padding:8px 16px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer}
+.btn-cancel{padding:8px 10px;background:none;border:1px solid var(--border);border-radius:8px;font-size:.82rem;color:var(--muted);cursor:pointer}
+.setup-card{background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.setup-card h3{font-size:.95rem;color:#78350f;margin-bottom:10px}
+.setup-card ol{padding-left:18px;font-size:.83rem;color:#92400e;line-height:2.2}
+.setup-card b{color:#78350f}
+.how-it-works{background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.82rem;color:#0c4a6e;line-height:1.7}
+.how-it-works strong{display:block;margin-bottom:4px}
+.members-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.members-bar h2{font-size:.9rem;font-weight:700;color:var(--primary);flex:1}
+.btn-add-member{background:var(--accent);color:white;border:none;padding:7px 14px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer}
+.members-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.member-chip{background:white;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:10px}
+.member-chip input{border:none;font-size:.95rem;font-weight:700;color:var(--primary);flex:1;border-bottom:2px solid transparent;background:transparent;padding:2px 0}
+.member-chip input:focus{outline:none;border-bottom-color:var(--accent)}
+.btn-del{background:#fff0f0;color:var(--danger);border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-title{font-size:.88rem;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.badge{background:var(--primary);color:white;font-size:.68rem;padding:2px 8px;border-radius:20px}
+.event-card{background:white;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:10px;overflow:hidden}
+.event-header{display:grid;grid-template-columns:34px 130px 1fr 24px;gap:10px;align-items:center;padding:13px 15px;cursor:pointer;user-select:none}
+.event-header:hover{background:#fafafa}
+.event-num{width:26px;height:26px;border-radius:50%;background:var(--primary);color:white;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.event-date{border:1px solid var(--border);border-radius:7px;padding:5px 7px;font-size:.82rem;width:120px}
+.event-desc{font-size:.83rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.type-dep{color:var(--accent);font-weight:700}.type-wd{color:var(--danger);font-weight:700}
+.ev-arrow{color:var(--muted);font-size:.75rem;transition:transform .2s;text-align:center}
+.ev-arrow.open{transform:rotate(90deg)}
+.event-body{display:none;border-top:1px solid var(--border);padding:15px}
+.event-body.open{display:block}
+.snap-box{background:#f0fdf8;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center}
+.snap-box label{display:block;font-size:.72rem;color:#065f46;margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.snap-box input{width:100%;border:1px solid #6ee7b7;border-radius:8px;padding:8px 10px;font-size:1rem;font-weight:700;background:white;color:var(--primary)}
+.snap-box input:focus{outline:none;border-color:var(--accent)}
+.snap-hint{font-size:.78rem;color:#065f46;line-height:1.6;opacity:.8}
+.init-hint{background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--muted);margin-bottom:14px}
+.txn-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.txn-table th{text-align:left;color:var(--muted);font-weight:600;padding:4px 6px;font-size:.7rem;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.txn-table td{padding:6px;vertical-align:middle}
+.txn-table tr:not(:last-child) td{border-bottom:1px solid #f5f7f9}
+.txn-table input,.txn-table select{border:1px solid var(--border);border-radius:6px;padding:5px 7px;font-size:.82rem;width:100%;background:#fafafa}
+.txn-table input:focus,.txn-table select:focus{outline:none;border-color:var(--accent);background:white}
+.btn-txn-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:1rem;padding:2px 4px}
+.btn-txn-del:hover{color:var(--danger)}
+.btn-add-txn{margin-top:10px;width:100%;padding:8px;background:none;border:1.5px dashed #dde;border-radius:8px;font-size:.8rem;color:var(--muted);cursor:pointer}
+.btn-add-txn:hover{border-color:var(--accent);color:var(--accent);background:#f0fdf8}
+.seg-result{margin-top:10px;border-radius:10px;padding:12px 14px}
+.seg-title{font-size:.72rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.seg-row{display:grid;grid-template-columns:70px 1fr 36px 80px;gap:8px;align-items:center;font-size:.83rem;margin-bottom:5px}
+.seg-name{font-weight:700;color:var(--primary)}
+.bar-wrap{background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.seg-pct{font-size:.72rem;color:var(--muted);text-align:right}
+.seg-amt{font-weight:700;text-align:right}
+.btn-ev-del{margin-top:14px;background:#fff0f0;color:var(--danger);border:1px solid #ffd6d6;border-radius:8px;padding:7px 14px;font-size:.78rem;cursor:pointer}
+.btn-ev-del:hover{background:#ffe0e0}
+.final-card{background:white;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px}
+.final-hd{background:var(--primary);color:white;padding:14px 20px;font-size:.9rem;font-weight:700}
+.final-table{width:100%;border-collapse:collapse}
+.final-table th{text-align:left;padding:10px 16px;font-size:.72rem;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)}
+.final-table td{padding:13px 16px;font-size:.9rem;border-bottom:1px solid #f5f7f9}
+.final-table tr:last-child td{border-bottom:none}
+.fn{font-weight:700;color:var(--primary)}.fp{font-weight:700;font-size:1rem}.ft{font-weight:700}
+.bottom-bar{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.btn-add-ev{flex:1;max-width:300px;padding:14px;background:white;border:2px dashed #c8d4e0;border-radius:12px;font-size:.9rem;color:var(--muted);cursor:pointer}
+.btn-add-ev:hover{border-color:var(--accent);color:var(--accent);background:#f0fdf8}
+.btn-reset{padding:14px 18px;background:white;border:1px solid var(--border);border-radius:12px;font-size:.82rem;color:var(--muted);cursor:pointer}
+.btn-reset:hover{background:#fff5f5;color:var(--danger)}
+.note{text-align:center;font-size:.73rem;color:#bbb;margin-top:12px}
+@media(max-width:580px){
+  .event-header{grid-template-columns:28px 1fr 20px}
+  .event-date{grid-column:1/-1;width:100%}
+  .snap-box{grid-template-columns:1fr}
+  .seg-row{grid-template-columns:60px 1fr 30px 68px}
+  .top-stats{grid-template-columns:1fr 1fr}
+  .top-stats .stat-box:last-child{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>投資損益分配表</h1>
+
+<div class="sync-bar">
+  <div class="sync-dot" id="syncDot"></div>
+  <div class="sync-text" id="syncText">尚未設定同步</div>
+  <div class="sync-time" id="syncTime"></div>
+  <button class="btn-s" id="btnSync" onclick="syncNow()" disabled>↻ 同步</button>
+  <button class="btn-s red" onclick="showUrlBar()">⚙ 設定</button>
+</div>
+
+<div class="url-bar" id="urlBar">
+  <input type="text" id="ghRepo" placeholder="owner/repo（例：x8806080/money-calc）" style="flex:1;min-width:180px">
+  <input type="password" id="ghToken" placeholder="GitHub Personal Token" style="flex:1;min-width:180px">
+  <button class="btn-ok" id="btnOk" onclick="applyConfig()">確認</button>
+  <button class="btn-cancel" onclick="hideUrlBar()">取消</button>
+</div>
+
+<div id="setupCard" class="setup-card">
+  <h3>🔧 設定 GitHub 同步（資料存在你自己的 repo）</h3>
+  <ol>
+    <li>GitHub → 頭像 → <b>Settings → Developer settings</b></li>
+    <li><b>Personal access tokens → Tokens (classic) → Generate new token</b></li>
+    <li>勾選 <b>repo</b> 權限，產生後<b>複製 Token</b>（只顯示一次）</li>
+    <li>點上方「<b>⚙ 設定</b>」，填入 <b>owner/repo</b> 和 <b>Token</b>，按確認</li>
+  </ol>
+  <p style="margin-top:10px;font-size:.78rem;color:#92400e">資料會存成 repo 裡的 data.json。三台裝置填同一組設定即可共用。Token 只存在各裝置本機，不會上傳。</p>
+</div>
+
+<div class="top-section">
+  <div class="top-inputs">
+    <div class="input-group">
+      <label>已實現損益 ($)</label>
+      <input type="number" id="realizedProfit" value="0" placeholder="0" oninput="onDataChange()">
+    </div>
+    <div class="input-group">
+      <label>未實現損益 ($)</label>
+      <input type="number" id="unrealizedProfit" value="0" placeholder="0" oninput="onDataChange()">
+    </div>
+  </div>
+  <div class="top-stats">
+    <div class="stat-box"><div class="stat-label">總損益</div><div class="stat-value neutral" id="dispTotal">0</div></div>
+    <div class="stat-box"><div class="stat-label">帳戶本金</div><div class="stat-value neutral" id="dispPrincipal">0</div></div>
+    <div class="stat-box"><div class="stat-label">整體報酬率</div><div class="stat-value neutral" id="dispROI">0%</div></div>
+  </div>
+</div>
+
+<div class="how-it-works">
+  <strong>📌 計算邏輯</strong>
+  每次加碼/減碼時新增事件，填入<b>當下已實現損益</b>。系統先用加碼前比例結算前段，新錢才進入下一段。最後段 = 剩餘已實現 + 全部未實現。
+</div>
+
+<div class="members-bar">
+  <h2>👥 投資成員</h2>
+  <button class="btn-add-member" onclick="addMember()">＋ 新增成員</button>
+</div>
+<div class="members-grid" id="membersGrid"></div>
+
+<div class="section-title">📅 加碼 / 減碼事件 <span class="badge" id="eventCount">0 個</span></div>
+<div id="eventsContainer"></div>
+
+<div class="final-card">
+  <div class="final-hd">📊 最終損益分配結果</div>
+  <table class="final-table">
+    <thead><tr><th>姓名</th><th>累計投入</th><th>分配損益</th><th>帳戶總值</th><th>個人報酬率</th></tr></thead>
+    <tbody id="finalBody"></tbody>
+  </table>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn-add-ev" onclick="addEvent()">＋ 新增加碼 / 減碼事件</button>
+  <button class="btn-reset" onclick="resetData()">重置</button>
+</div>
+<p class="note">* 資料同步至 jsonbin.io，三台裝置共用</p>
+</div>
+
+<script>
+// ── 工具 ──────────────────────────────────────
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function fmt(n){ return Math.round(n).toLocaleString(); }
+function fmtS(n){ return (n>=0?'+':'')+fmt(n); }
+function cc(n){ return n>0?'profit':n<0?'loss':'neutral'; }
+
+// ── GitHub API 同步（存到你的 repo 的 data.json）──
+// 設定：owner/repo + Personal Access Token
+let GH_REPO  = localStorage.getItem('gh_repo')  || '';   // 格式 owner/repo
+let GH_TOKEN = localStorage.getItem('gh_token') || '';
+let GH_PATH  = 'data.json';
+let GH_SHA   = localStorage.getItem('gh_sha')   || '';   // 檔案版本 sha
+let syncTimer = null;
+
+function setSyncStatus(state, text, time){
+  document.getElementById('syncDot').className = 'sync-dot '+state;
+  document.getElementById('syncText').textContent = text;
+  if(time !== undefined) document.getElementById('syncTime').textContent = time;
+}
+
+function showUrlBar(){
+  document.getElementById('urlBar').classList.add('show');
+  document.getElementById('ghRepo').value = GH_REPO;
+  document.getElementById('ghToken').value = GH_TOKEN;
+  document.getElementById('ghRepo').focus();
+}
+function hideUrlBar(){ document.getElementById('urlBar').classList.remove('show'); }
+function checkInput(){}
+
+async function applyConfig(){
+  const repo = document.getElementById('ghRepo').value.trim();
+  const token = document.getElementById('ghToken').value.trim();
+  if(!repo.includes('/') || token.length < 10){
+    alert('請輸入正確的 owner/repo 和 Token');
+    return;
+  }
+  GH_REPO = repo; GH_TOKEN = token;
+  localStorage.setItem('gh_repo', repo);
+  localStorage.setItem('gh_token', token);
+  hideUrlBar();
+  document.getElementById('setupCard').style.display = 'none';
+  document.getElementById('btnSync').disabled = false;
+  setSyncStatus('ing', '連線中...');
+  await loadFromGitHub();
+}
+
+function ghApiUrl(){
+  return 'https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_PATH;
+}
+
+// UTF-8 安全的 base64 編解碼
+function b64encode(str){
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function b64decode(b64){
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+async function loadFromGitHub(){
+  if(!GH_REPO || !GH_TOKEN){ setSyncStatus('warn','尚未設定，請按 ⚙ 設定'); return; }
+  setSyncStatus('ing', '從 GitHub 載入中...');
+  try {
+    const res = await fetch(ghApiUrl()+'?t='+Date.now(), {
+      headers: { 'Authorization': 'token '+GH_TOKEN, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if(res.status === 404){
+      // 檔案還不存在，建立一個
+      setSyncStatus('ing', '建立資料檔...');
+      await pushToGitHub();
+      return;
+    }
+    if(!res.ok){
+      const err = await res.json();
+      setSyncStatus('err', '載入失敗：'+(err.message||res.status), '');
+      return;
+    }
+    const data = await res.json();
+    GH_SHA = data.sha;
+    localStorage.setItem('gh_sha', GH_SHA);
+    const json = JSON.parse(b64decode(data.content));
+    if(json && json.members){
+      D = json;
+      document.getElementById('realizedProfit').value = D.realized||0;
+      document.getElementById('unrealizedProfit').value = D.unrealized||0;
+      openEvents.clear();
+      renderAll();
+    }
+    setSyncStatus('ok', '已同步', '最後同步：'+new Date().toLocaleTimeString());
+    localStorage.setItem('js_backup', JSON.stringify(D));
+  } catch(e){ setSyncStatus('err', '載入失敗：'+e.message, ''); }
+}
+
+async function pushToGitHub(){
+  if(!GH_REPO || !GH_TOKEN) return;
+  setSyncStatus('ing', '儲存中...');
+  localStorage.setItem('js_backup', JSON.stringify(D));
+  try {
+    const body = {
+      message: '更新損益資料 '+new Date().toLocaleString(),
+      content: b64encode(JSON.stringify(D, null, 2))
+    };
+    if(GH_SHA) body.sha = GH_SHA;
+    const res = await fetch(ghApiUrl(), {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token '+GH_TOKEN,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if(!res.ok){
+      const err = await res.json();
+      // sha 衝突時自動重抓最新再存
+      if(res.status === 409 || (err.message && err.message.includes('sha'))){
+        await loadFromGitHub();
+        return;
+      }
+      setSyncStatus('err', '儲存失敗：'+(err.message||res.status), '');
+      return;
+    }
+    const data = await res.json();
+    if(data.content && data.content.sha){
+      GH_SHA = data.content.sha;
+      localStorage.setItem('gh_sha', GH_SHA);
+    }
+    setSyncStatus('ok', '已同步', '最後同步：'+new Date().toLocaleTimeString());
+  } catch(e){ setSyncStatus('err', '儲存失敗，已暫存本地', ''); }
+}
+
+function syncNow(){ loadFromGitHub(); }
+function schedulePush(){ clearTimeout(syncTimer); syncTimer = setTimeout(pushToGitHub, 1500); }
+
+// ── 資料 ──────────────────────────────────────
+const DEFAULT = {
+  realized:0, unrealized:0,
+  members:[{id:'m1',name:'強'},{id:'m2',name:'喬'},{id:'m3',name:'媛'}],
+  events:[{
+    id:'e1', date:today(), realizedAtEvent:0, isInitial:true,
+    txns:[
+      {memberId:'m1',type:'deposit',amount:301000},
+      {memberId:'m2',type:'deposit',amount:10000},
+      {memberId:'m3',type:'deposit',amount:10000}
+    ]
+  }]
+};
+
+let D = {};
+let openEvents = new Set();
+
+function init(){
+  const local = localStorage.getItem('js_backup');
+  try { D = local ? JSON.parse(local) : JSON.parse(JSON.stringify(DEFAULT)); }
+  catch(e){ D = JSON.parse(JSON.stringify(DEFAULT)); }
+  // 相容舊欄位名稱
+  if(D.events) D.events.forEach(ev=>{
+    if(ev.accountValueBefore !== undefined && ev.realizedAtEvent === undefined){
+      ev.realizedAtEvent = ev.accountValueBefore;
+    }
+    if(ev.realizedAtEvent === undefined) ev.realizedAtEvent = 0;
+  });
+  document.getElementById('realizedProfit').value = D.realized||0;
+  document.getElementById('unrealizedProfit').value = D.unrealized||0;
+  renderAll();
+
+  if(GH_REPO && GH_TOKEN){
+    document.getElementById('setupCard').style.display = 'none';
+    document.getElementById('btnSync').disabled = false;
+    loadFromGitHub();
+  }
+}
+
+function onDataChange(){
+  D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
+  D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
+  calcAndRender();
+  schedulePush();
+}
+function saveAndRender(){
+  D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
+  D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
+  localStorage.setItem('js_backup', JSON.stringify(D));
+  calcAndRender();
+  schedulePush();
+}
+
+// ── Render ────────────────────────────────────
+function renderAll(){ renderMembers(); renderEvents(); calcAndRender(); }
+
+function renderMembers(){
+  const g = document.getElementById('membersGrid');
+  g.innerHTML = '';
+  D.members.forEach(function(m){
+    const d = document.createElement('div');
+    d.className = 'member-chip';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.value = m.name; inp.placeholder = '姓名';
+    inp.oninput = function(){ m.name = this.value; saveAndRender(); };
+    const btn = document.createElement('button');
+    btn.className = 'btn-del'; btn.textContent = '×';
+    btn.onclick = function(){ removeMember(m.id); };
+    d.appendChild(inp); d.appendChild(btn);
+    g.appendChild(d);
+  });
+}
+
+function addMember(){
+  D.members.push({id:uid(), name:'新成員'});
+  saveAndRender(); renderAll();
+}
+function removeMember(id){
+  if(D.members.length<=1){alert('至少需要一位成員');return;}
+  const inUse = D.events.some(function(e){return e.txns.some(function(t){return t.memberId===id;});});
+  if(inUse && !confirm('此成員有交易紀錄，確定刪除？')) return;
+  D.members = D.members.filter(function(m){return m.id!==id;});
+  D.events.forEach(function(e){e.txns=e.txns.filter(function(t){return t.memberId!==id;});});
+  saveAndRender(); renderAll();
+}
+
+function renderEvents(){
+  const c = document.getElementById('eventsContainer');
+  c.innerHTML = '';
+  document.getElementById('eventCount').textContent = D.events.length+' 個';
+  const sorted = D.events.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+
+  sorted.forEach(function(ev, idx){
+    const isInit = !!ev.isInitial;
+    const isOpen = openEvents.has(ev.id);
+
+    // 描述文字
+    var parts = [];
+    if(isInit){ parts.push('初始投入'); }
+    else {
+      ev.txns.forEach(function(t){
+        var m = D.members.find(function(x){return x.id===t.memberId;});
+        if(m){
+          var cls = t.type==='deposit'?'type-dep':'type-wd';
+          var sign = t.type==='deposit'?'+':'-';
+          parts.push('<span class="'+cls+'">'+m.name+' '+sign+fmt(t.amount)+'</span>');
+        }
+      });
+      if(!parts.length) parts.push('<span style="color:#ccc">尚無交易</span>');
+    }
+
+    var card = document.createElement('div');
+    card.className = 'event-card';
+    card.id = 'ecard-'+ev.id;
+
+    // Header
+    var hdr = document.createElement('div');
+    hdr.className = 'event-header';
+    hdr.onclick = function(){ toggleEvent(ev.id); };
+
+    var num = document.createElement('div');
+    num.className = 'event-num'; num.textContent = idx+1;
+
+    var dateInp = document.createElement('input');
+    dateInp.type = 'date'; dateInp.className = 'event-date'; dateInp.value = ev.date;
+    dateInp.onclick = function(e){ e.stopPropagation(); };
+    dateInp.oninput = function(e){ e.stopPropagation(); ev.date=this.value; saveAndRender(); };
+
+    var desc = document.createElement('div');
+    desc.className = 'event-desc'; desc.innerHTML = parts.join(' · ');
+
+    var arrow = document.createElement('div');
+    arrow.className = 'ev-arrow'+(isOpen?' open':''); arrow.textContent = '▶';
+
+    hdr.appendChild(num); hdr.appendChild(dateInp); hdr.appendChild(desc); hdr.appendChild(arrow);
+    card.appendChild(hdr);
+
+    // Body
+    var body = document.createElement('div');
+    body.className = 'event-body'+(isOpen?' open':'');
+    body.id = 'ebody-'+ev.id;
+
+    if(isInit){
+      var hint = document.createElement('div');
+      hint.className = 'init-hint';
+      hint.textContent = '初始投入事件：填入各人起始本金，無需填已實現損益。';
+      body.appendChild(hint);
+    } else {
+      var snapBox = document.createElement('div');
+      snapBox.className = 'snap-box';
+      var snapLeft = document.createElement('div');
+      var lbl = document.createElement('label');
+      lbl.textContent = '加碼/減碼當下 已實現損益 ($)';
+      var snapInp = document.createElement('input');
+      snapInp.type = 'number'; snapInp.value = ev.realizedAtEvent||0;
+      snapInp.placeholder = '當下已實現損益';
+      snapInp.oninput = function(){ ev.realizedAtEvent=parseFloat(this.value)||0; saveAndRender(); };
+      snapLeft.appendChild(lbl); snapLeft.appendChild(snapInp);
+      var snapRight = document.createElement('div');
+      snapRight.className = 'snap-hint';
+      snapRight.innerHTML = '填入此事件發生當下的<b>已實現損益</b>。<br>前段損益 = 此數字 − 上段已分配已實現。<br>新錢才進入下一段計算。';
+      snapBox.appendChild(snapLeft); snapBox.appendChild(snapRight);
+      body.appendChild(snapBox);
+    }
+
+    // 交易表
+    var tbl = document.createElement('table');
+    tbl.className = 'txn-table';
+    tbl.innerHTML = '<thead><tr><th style="width:100px">成員</th><th style="width:110px">類型</th><th>金額($)</th><th style="width:30px"></th></tr></thead>';
+    var tbody = document.createElement('tbody');
+    tbody.id = 'tbody-'+ev.id;
+    tbl.appendChild(tbody);
+    body.appendChild(tbl);
+
+    var addTxnBtn = document.createElement('button');
+    addTxnBtn.className = 'btn-add-txn'; addTxnBtn.textContent = '＋ 新增一筆';
+    addTxnBtn.onclick = function(){ addTxn(ev.id); };
+    body.appendChild(addTxnBtn);
+
+    var sres = document.createElement('div');
+    sres.id = 'sres-'+ev.id;
+    body.appendChild(sres);
+
+    if(!isInit){
+      var delBtn = document.createElement('button');
+      delBtn.className = 'btn-ev-del'; delBtn.textContent = '🗑 刪除此事件';
+      delBtn.onclick = function(){ removeEvent(ev.id); };
+      body.appendChild(delBtn);
+    }
+
+    card.appendChild(body);
+    c.appendChild(card);
+    renderTxnRows(ev);
+  });
+}
+
+function toggleEvent(id){
+  if(openEvents.has(id)) openEvents.delete(id); else openEvents.add(id);
+  renderEvents(); calcAndRender();
+}
+
+function renderTxnRows(ev){
+  var tb = document.getElementById('tbody-'+ev.id);
+  if(!tb) return;
+  tb.innerHTML = '';
+  ev.txns.forEach(function(t, ti){
+    var tr = document.createElement('tr');
+
+    var td1 = document.createElement('td');
+    var sel1 = document.createElement('select');
+    D.members.forEach(function(m){
+      var opt = document.createElement('option');
+      opt.value = m.id; opt.textContent = m.name;
+      if(m.id===t.memberId) opt.selected = true;
+      sel1.appendChild(opt);
+    });
+    sel1.oninput = function(){ t.memberId=this.value; saveAndRender(); };
+    td1.appendChild(sel1);
+
+    var td2 = document.createElement('td');
+    var sel2 = document.createElement('select');
+    var optDep = document.createElement('option'); optDep.value='deposit'; optDep.textContent='＋ 加碼'; if(t.type==='deposit') optDep.selected=true; sel2.appendChild(optDep);
+    var optWd  = document.createElement('option'); optWd.value='withdraw'; optWd.textContent='－ 減碼'; if(t.type==='withdraw') optWd.selected=true; sel2.appendChild(optWd);
+    sel2.oninput = function(){ t.type=this.value; saveAndRender(); };
+    td2.appendChild(sel2);
+
+    var td3 = document.createElement('td');
+    var numInp = document.createElement('input');
+    numInp.type='number'; numInp.value=t.amount; numInp.min=0;
+    numInp.oninput = function(){ t.amount=parseFloat(this.value)||0; saveAndRender(); };
+    td3.appendChild(numInp);
+
+    var td4 = document.createElement('td');
+    var delBtn = document.createElement('button');
+    delBtn.className='btn-txn-del'; delBtn.textContent='×';
+    delBtn.onclick = (function(idx){ return function(){ removeTxn(ev.id, idx); }; })(ti);
+    td4.appendChild(delBtn);
+
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+    tb.appendChild(tr);
+  });
+}
+
+function addTxn(evId){
+  var ev = D.events.find(function(e){return e.id===evId;});
+  if(!ev) return;
+  ev.txns.push({memberId: D.members[0]?D.members[0].id:'', type:'deposit', amount:0});
+  saveAndRender(); renderTxnRows(ev); calcAndRender();
+}
+function removeTxn(evId, ti){
+  var ev = D.events.find(function(e){return e.id===evId;});
+  if(!ev) return;
+  ev.txns.splice(ti,1);
+  saveAndRender(); renderTxnRows(ev); calcAndRender();
+}
+function addEvent(){
+  var ev = {id:uid(), date:today(), realizedAtEvent:0, isInitial:false, txns:[]};
+  D.events.push(ev); openEvents.add(ev.id);
+  saveAndRender(); renderEvents(); calcAndRender();
+}
+function removeEvent(id){
+  if(!confirm('確定刪除此事件？')) return;
+  D.events = D.events.filter(function(e){return e.id!==id;});
+  openEvents.delete(id);
+  saveAndRender(); renderEvents(); calcAndRender();
+}
+
+// ── 計算核心 ──────────────────────────────────
+function renderSegBlock(label, segProfit, shares, totalShares, isOngoing){
+  var rows = '';
+  D.members.forEach(function(m){
+    var sh = shares[m.id]||0;
+    var pct = totalShares>0 ? sh/totalShares*100 : 0;
+    var mp  = totalShares>0 ? segProfit*(sh/totalShares) : 0;
+    var barColor = mp>=0 ? 'var(--accent)' : 'var(--danger)';
+    rows += '<div class="seg-row">'
+      +'<div class="seg-name">'+m.name+'</div>'
+      +'<div class="bar-wrap"><div class="bar-fill" style="width:'+pct.toFixed(1)+'%;background:'+barColor+'"></div></div>'
+      +'<div class="seg-pct">'+pct.toFixed(0)+'%</div>'
+      +'<div class="seg-amt '+cc(mp)+'">'+fmtS(mp)+'</div>'
+      +'</div>';
+  });
+  var bg     = isOngoing ? '#f0fdf8' : '#f8fafc';
+  var border = isOngoing ? '1px solid #a7f3d0' : 'none';
+  return '<div class="seg-result" style="background:'+bg+';border:'+border+'">'
+    +'<div class="seg-title">'+label+' · <b>'+fmtS(segProfit)+'</b></div>'+rows+'</div>';
+}
+
+function calcAndRender(){
+  var realized   = parseFloat(document.getElementById('realizedProfit').value)||0;
+  var unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
+  var totalProfit = realized + unrealized;
+
+  var events = D.events.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+
+  var principal = {}, profit = {};
+  D.members.forEach(function(m){ principal[m.id]=0; profit[m.id]=0; });
+
+  var settled = {};  // evId → {segProfit, shares, totalShares}
+
+  for(var k=0; k<events.length; k++){
+    var ev = events[k];
+
+    if(!ev.isInitial && k>0){
+      // Step A：用加碼前持股比例，結算前段損益
+      var realizedNow  = ev.realizedAtEvent||0;
+      var totalDistSoFar = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
+      var segProfit = realizedNow - totalDistSoFar;
+
+      var shares = {}, totalShares = 0;
+      D.members.forEach(function(m){ shares[m.id]=principal[m.id]; totalShares+=principal[m.id]; });
+
+      settled[ev.id] = {segProfit:segProfit, shares:shares, totalShares:totalShares};
+
+      if(totalShares>0){
+        D.members.forEach(function(m){ profit[m.id] += segProfit*(shares[m.id]/totalShares); });
+      }
+    }
+
+    // Step B：執行加碼/減碼
+    ev.txns.forEach(function(t){
+      if(!principal.hasOwnProperty(t.memberId)) return;
+      if(t.type==='deposit') principal[t.memberId] += t.amount;
+      else principal[t.memberId] = Math.max(0, principal[t.memberId]-t.amount);
+    });
+  }
+
+  // 最後一段：剩餘已實現 + 全部未實現
+  var totalRealizedDist = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
+  var lastSeg = (realized - totalRealizedDist) + unrealized;
+  var lastShares = {}, lastTotal = 0;
+  D.members.forEach(function(m){ lastShares[m.id]=principal[m.id]; lastTotal+=principal[m.id]; });
+  if(lastTotal>0){
+    D.members.forEach(function(m){ profit[m.id] += lastSeg*(lastShares[m.id]/lastTotal); });
+  }
+
+  // 頂部統計
+  var totalPrincipal = Object.keys(principal).reduce(function(s,id){return s+principal[id];},0);
+  var roi = totalPrincipal>0 ? totalProfit/totalPrincipal : 0;
+  var tEl = document.getElementById('dispTotal');
+  tEl.textContent = fmt(totalProfit); tEl.className = 'stat-value '+cc(totalProfit);
+  document.getElementById('dispPrincipal').textContent = fmt(totalPrincipal);
+  var rEl = document.getElementById('dispROI');
+  rEl.textContent = (roi*100).toFixed(2)+'%'; rEl.className = 'stat-value '+cc(roi);
+
+  // 段落顯示
+  var lastEvId = events.length>0 ? events[events.length-1].id : null;
+  events.forEach(function(ev){
+    var el = document.getElementById('sres-'+ev.id);
+    if(!el) return;
+    if(ev.isInitial){ el.innerHTML=''; return; }
+    var html = '';
+    var s = settled[ev.id];
+    if(s) html += renderSegBlock('✅ 前段損益結算（加碼前比例）', s.segProfit, s.shares, s.totalShares, false);
+    if(ev.id===lastEvId) html += renderSegBlock('⏳ 當前段損益（進行中）', lastSeg, lastShares, lastTotal, true);
+    el.innerHTML = html;
+  });
+
+  // 最終結算表
+  var deposits = {};
+  D.members.forEach(function(m){ deposits[m.id]=0; });
+  D.events.forEach(function(ev){
+    ev.txns.forEach(function(t){
+      if(t.type==='deposit' && deposits.hasOwnProperty(t.memberId)) deposits[t.memberId]+=t.amount;
+    });
+  });
+  var tbody = document.getElementById('finalBody');
+  tbody.innerHTML = '';
+  D.members.forEach(function(m){
+    var dep=deposits[m.id]||0, pft=profit[m.id]||0, rem=principal[m.id]||0;
+    var roi2 = dep>0 ? pft/dep*100 : 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="fn">'+m.name+'</td>'
+      +'<td style="color:var(--muted)">'+fmt(dep)+'</td>'
+      +'<td class="fp '+cc(pft)+'">'+fmtS(pft)+'</td>'
+      +'<td class="ft">'+fmt(rem+pft)+'</td>'
+      +'<td class="'+cc(roi2)+'" style="font-size:.85rem">'+(roi2>=0?'+':'')+roi2.toFixed(2)+'%</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function resetData(){
+  if(!confirm('確定要重置所有資料？此操作也會清除雲端資料。')) return;
+  D = JSON.parse(JSON.stringify(DEFAULT));
+  openEvents.clear();
+  document.getElementById('realizedProfit').value = 0;
+  document.getElementById('unrealizedProfit').value = 0;
+  renderAll(); pushToGitHub();
+}
+
+init();
+</script>
+</body>
+</html>
