@@ -1,0 +1,43 @@
+{
+  "realized": 0,
+  "unrealized": 0,
+  "members": [
+    {
+      "id": "m1",
+      "name": "強"
+    },
+    {
+      "id": "m2",
+      "name": "喬"
+    },
+    {
+      "id": "m3",
+      "name": "媛"
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "date": "2026-06-01",
+      "realizedAtEvent": 0,
+      "isInitial": true,
+      "txns": [
+        {
+          "memberId": "m1",
+          "type": "deposit",
+          "amount": 301000
+        },
+        {
+          "memberId": "m2",
+          "type": "deposit",
+          "amount": 10000
+        },
+        {
+          "memberId": "m3",
+          "type": "deposit",
+          "amount": 10000
+        }
+      ]
+    }
+  ]
+}
