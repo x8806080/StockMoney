@@ -351,6 +351,7 @@ function init(){
       ev.realizedAtEvent = ev.accountValueBefore;
     }
     if(ev.realizedAtEvent === undefined) ev.realizedAtEvent = 0;
+    if(ev.unrealizedAtEvent === undefined) ev.unrealizedAtEvent = 0;
   });
   document.getElementById('realizedProfit').value = D.realized||0;
   document.getElementById('unrealizedProfit').value = D.unrealized||0;
@@ -474,19 +475,38 @@ function renderEvents(){
     } else {
       var snapBox = document.createElement('div');
       snapBox.className = 'snap-box';
-      var snapLeft = document.createElement('div');
-      var lbl = document.createElement('label');
-      lbl.textContent = '加碼/減碼當下 帳戶總損益 ($)';
-      var snapInp = document.createElement('input');
-      snapInp.type = 'number'; snapInp.value = ev.realizedAtEvent||0;
-      snapInp.placeholder = '當下總損益(已實現+未實現)';
-      snapInp.oninput = function(){ ev.realizedAtEvent=parseFloat(this.value)||0; saveAndRender(); };
-      snapLeft.appendChild(lbl); snapLeft.appendChild(snapInp);
-      var snapRight = document.createElement('div');
-      snapRight.className = 'snap-hint';
-      snapRight.innerHTML = '填入此事件當下的<b>帳戶總損益</b>（已實現+未實現）。<br>前段損益 = 此數字 − 上段已分配。<br>含未實現都先結算給原持股人，新錢從乾淨基期進場。';
-      snapBox.appendChild(snapLeft); snapBox.appendChild(snapRight);
+
+      // 已實現損益欄
+      var colR = document.createElement('div');
+      var lblR = document.createElement('label');
+      lblR.textContent = '當下 已實現損益 ($)';
+      var inpR = document.createElement('input');
+      inpR.type = 'number'; inpR.value = ev.realizedAtEvent||0;
+      inpR.placeholder = '已實現';
+      inpR.oninput = function(){ ev.realizedAtEvent=parseFloat(this.value)||0; updateSnapSum(ev); saveAndRender(); };
+      colR.appendChild(lblR); colR.appendChild(inpR);
+
+      // 未實現損益欄
+      var colU = document.createElement('div');
+      var lblU = document.createElement('label');
+      lblU.textContent = '當下 未實現損益 ($)';
+      var inpU = document.createElement('input');
+      inpU.type = 'number'; inpU.value = ev.unrealizedAtEvent||0;
+      inpU.placeholder = '未實現';
+      inpU.oninput = function(){ ev.unrealizedAtEvent=parseFloat(this.value)||0; updateSnapSum(ev); saveAndRender(); };
+      colU.appendChild(lblU); colU.appendChild(inpU);
+
+      snapBox.appendChild(colR); snapBox.appendChild(colU);
       body.appendChild(snapBox);
+
+      // 合計提示
+      var sumHint = document.createElement('div');
+      sumHint.className = 'snap-hint';
+      sumHint.id = 'snapsum-' + ev.id;
+      sumHint.style.marginBottom = '14px';
+      var sumVal = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
+      sumHint.innerHTML = '當下帳戶總損益合計：<b>' + fmtS(sumVal) + '</b><br>前段損益 = 此合計 − 上段已分配，含未實現先結算給原持股人，新錢從乾淨基期進場。';
+      body.appendChild(sumHint);
     }
 
     // 交易表
@@ -580,7 +600,7 @@ function removeTxn(evId, ti){
   saveAndRender(); renderTxnRows(ev); calcAndRender();
 }
 function addEvent(){
-  var ev = {id:uid(), date:today(), realizedAtEvent:0, isInitial:false, txns:[]};
+  var ev = {id:uid(), date:today(), realizedAtEvent:0, unrealizedAtEvent:0, isInitial:false, txns:[]};
   D.events.push(ev); openEvents.add(ev.id);
   saveAndRender(); renderEvents(); calcAndRender();
 }
@@ -612,6 +632,13 @@ function renderSegBlock(label, segProfit, shares, totalShares, isOngoing){
     +'<div class="seg-title">'+label+' · <b>'+fmtS(segProfit)+'</b></div>'+rows+'</div>';
 }
 
+function updateSnapSum(ev){
+  var el = document.getElementById('snapsum-'+ev.id);
+  if(!el) return;
+  var sum = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
+  el.innerHTML = '當下帳戶總損益合計：<b>' + fmtS(sum) + '</b><br>前段損益 = 此合計 − 上段已分配，含未實現先結算給原持股人，新錢從乾淨基期進場。';
+}
+
 function calcAndRender(){
   var realized   = parseFloat(document.getElementById('realizedProfit').value)||0;
   var unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
@@ -629,8 +656,8 @@ function calcAndRender(){
 
     if(!ev.isInitial && k>0){
       // Step A：用加碼前持股比例，結算前段損益
-      // realizedAtEvent 現在代表「當下帳戶總損益」(已實現+未實現)
-      var totalNow = ev.realizedAtEvent||0;
+      // 當下帳戶總損益 = 已實現 + 未實現（兩欄相加）
+      var totalNow = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
       var totalDistSoFar = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
       var segProfit = totalNow - totalDistSoFar;
 
