@@ -162,7 +162,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 
 <div class="how-it-works">
   <strong>📌 計算邏輯</strong>
-  每次加碼/減碼時新增事件，填入<b>當下已實現損益</b>。系統先用加碼前比例結算前段，新錢才進入下一段。最後段 = 剩餘已實現 + 全部未實現。
+  每次加碼/減碼時新增事件，填入<b>當下帳戶總損益</b>（已實現+未實現）。系統先用加碼前比例結算前段（含未實現），新錢才從乾淨基期進入下一段。
 </div>
 
 <div class="members-bar">
@@ -476,15 +476,15 @@ function renderEvents(){
       snapBox.className = 'snap-box';
       var snapLeft = document.createElement('div');
       var lbl = document.createElement('label');
-      lbl.textContent = '加碼/減碼當下 已實現損益 ($)';
+      lbl.textContent = '加碼/減碼當下 帳戶總損益 ($)';
       var snapInp = document.createElement('input');
       snapInp.type = 'number'; snapInp.value = ev.realizedAtEvent||0;
-      snapInp.placeholder = '當下已實現損益';
+      snapInp.placeholder = '當下總損益(已實現+未實現)';
       snapInp.oninput = function(){ ev.realizedAtEvent=parseFloat(this.value)||0; saveAndRender(); };
       snapLeft.appendChild(lbl); snapLeft.appendChild(snapInp);
       var snapRight = document.createElement('div');
       snapRight.className = 'snap-hint';
-      snapRight.innerHTML = '填入此事件發生當下的<b>已實現損益</b>。<br>前段損益 = 此數字 − 上段已分配已實現。<br>新錢才進入下一段計算。';
+      snapRight.innerHTML = '填入此事件當下的<b>帳戶總損益</b>（已實現+未實現）。<br>前段損益 = 此數字 − 上段已分配。<br>含未實現都先結算給原持股人，新錢從乾淨基期進場。';
       snapBox.appendChild(snapLeft); snapBox.appendChild(snapRight);
       body.appendChild(snapBox);
     }
@@ -629,9 +629,10 @@ function calcAndRender(){
 
     if(!ev.isInitial && k>0){
       // Step A：用加碼前持股比例，結算前段損益
-      var realizedNow  = ev.realizedAtEvent||0;
+      // realizedAtEvent 現在代表「當下帳戶總損益」(已實現+未實現)
+      var totalNow = ev.realizedAtEvent||0;
       var totalDistSoFar = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
-      var segProfit = realizedNow - totalDistSoFar;
+      var segProfit = totalNow - totalDistSoFar;
 
       // 比例權重 = 本金 + 累計已分配獲利（權益），讓賺到的錢也參與下一段
       var shares = {}, totalShares = 0;
@@ -656,9 +657,9 @@ function calcAndRender(){
     });
   }
 
-  // 最後一段：剩餘已實現 + 全部未實現
-  var totalRealizedDist = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
-  var lastSeg = (realized - totalRealizedDist) + unrealized;
+  // 最後一段：當前總損益 − 已分配（含未實現）
+  var totalDistAll = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
+  var lastSeg = totalProfit - totalDistAll;
   var lastShares = {}, lastTotal = 0;
   D.members.forEach(function(m){
     var equity = principal[m.id] + profit[m.id];
