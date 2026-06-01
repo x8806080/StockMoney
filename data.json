@@ -52,7 +52,7 @@
         {
           "memberId": "m1",
           "type": "deposit",
-          "amount": 0
+          "amount": 10000
         }
       ]
     }
