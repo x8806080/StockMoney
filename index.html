@@ -127,28 +127,8 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 
 <div class="sync-bar">
   <div class="sync-dot" id="syncDot"></div>
-  <div class="sync-text" id="syncText">尚未設定同步</div>
+  <div class="sync-text" id="syncText">同步中...</div>
   <div class="sync-time" id="syncTime"></div>
-  <button class="btn-s" id="btnSync" onclick="syncNow()" disabled>↻ 同步</button>
-  <button class="btn-s red" onclick="showUrlBar()">⚙ 設定</button>
-</div>
-
-<div class="url-bar" id="urlBar">
-  <input type="text" id="ghRepo" placeholder="owner/repo（例：x8806080/money-calc）" style="flex:1;min-width:180px">
-  <input type="password" id="ghToken" placeholder="GitHub Personal Token" style="flex:1;min-width:180px">
-  <button class="btn-ok" id="btnOk" onclick="applyConfig()">確認</button>
-  <button class="btn-cancel" onclick="hideUrlBar()">取消</button>
-</div>
-
-<div id="setupCard" class="setup-card">
-  <h3>🔧 設定 GitHub 同步（資料存在你自己的 repo）</h3>
-  <ol>
-    <li>GitHub → 頭像 → <b>Settings → Developer settings</b></li>
-    <li><b>Personal access tokens → Tokens (classic) → Generate new token</b></li>
-    <li>勾選 <b>repo</b> 權限，產生後<b>複製 Token</b>（只顯示一次）</li>
-    <li>點上方「<b>⚙ 設定</b>」，填入 <b>owner/repo</b> 和 <b>Token</b>，按確認</li>
-  </ol>
-  <p style="margin-top:10px;font-size:.78rem;color:#92400e">資料會存成 repo 裡的 data.json。三台裝置填同一組設定即可共用。Token 只存在各裝置本機，不會上傳。</p>
 </div>
 
 <div class="top-section">
@@ -242,31 +222,7 @@ function setSyncStatus(state, text, time){
   if(time !== undefined) document.getElementById('syncTime').textContent = time;
 }
 
-function showUrlBar(){
-  document.getElementById('urlBar').classList.add('show');
-  document.getElementById('ghRepo').value = GH_REPO;
-  document.getElementById('ghToken').value = GH_TOKEN;
-  document.getElementById('ghRepo').focus();
-}
-function hideUrlBar(){ document.getElementById('urlBar').classList.remove('show'); }
-function checkInput(){}
-
-async function applyConfig(){
-  const repo = document.getElementById('ghRepo').value.trim();
-  const token = document.getElementById('ghToken').value.trim();
-  if(!repo.includes('/') || token.length < 10){
-    alert('請輸入正確的 owner/repo 和 Token');
-    return;
-  }
-  GH_REPO = repo; GH_TOKEN = token;
-  localStorage.setItem('gh_repo', repo);
-  localStorage.setItem('gh_token', token);
-  hideUrlBar();
-  document.getElementById('setupCard').style.display = 'none';
-  document.getElementById('btnSync').disabled = false;
-  setSyncStatus('ing', '連線中...');
-  await loadFromGitHub();
-}
+function syncNow(){ loadFromGitHub(); }
 
 function ghApiUrl(){
   return 'https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_PATH;
@@ -352,7 +308,6 @@ async function pushToGitHub(){
   } catch(e){ setSyncStatus('err', '儲存失敗，已暫存本地', ''); }
 }
 
-function syncNow(){ loadFromGitHub(); }
 function schedulePush(){ clearTimeout(syncTimer); syncTimer = setTimeout(pushToGitHub, 1500); }
 
 // ── 資料 ──────────────────────────────────────
@@ -389,9 +344,9 @@ function init(){
   renderAll();
 
   if(GH_REPO && GH_TOKEN){
-    document.getElementById('setupCard').style.display = 'none';
-    document.getElementById('btnSync').disabled = false;
     loadFromGitHub();
+  } else {
+    setSyncStatus('err', '尚未在程式碼填入 Token', '');
   }
 }
 
