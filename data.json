@@ -99,6 +99,14 @@
           "amount": 100800
         }
       ]
+    },
+    {
+      "id": "mqesku5tcax",
+      "date": "2026-06-15",
+      "realizedAtEvent": 0,
+      "unrealizedAtEvent": 0,
+      "isInitial": false,
+      "txns": []
     }
   ]
 }
