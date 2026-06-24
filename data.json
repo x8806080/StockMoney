@@ -99,14 +99,6 @@
           "amount": 100800
         }
       ]
-    },
-    {
-      "id": "mqixdfsuyb0",
-      "date": "2026-06-18",
-      "realizedAtEvent": 0,
-      "unrealizedAtEvent": 0,
-      "isInitial": false,
-      "txns": []
     }
   ]
 }
