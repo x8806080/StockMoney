@@ -12,6 +12,8 @@ body{font-family:-apple-system,"Helvetica Neue",sans-serif;background:var(--bg);
 h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padding:16px 0 20px}
 .top-section{background:var(--primary);border-radius:16px;padding:20px;margin-bottom:16px;color:white}
 .top-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.top-inputs.three{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:580px){.top-inputs.three{grid-template-columns:1fr}}
 .input-group label{display:block;font-size:.72rem;opacity:.55;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
 .input-group input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:10px 12px;font-size:1.05rem;color:white;font-weight:600}
 .input-group input:focus{outline:none;border-color:var(--accent)}
@@ -142,7 +144,11 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 </div>
 
 <div class="top-section">
-  <div class="top-inputs">
+  <div class="top-inputs three">
+    <div class="input-group">
+      <label>期初累積獲利 ($)</label>
+      <input type="number" id="priorProfit" value="0" placeholder="0" oninput="onDataChange()">
+    </div>
     <div class="input-group">
       <label>已實現損益 ($)</label>
       <input type="number" id="realizedProfit" value="0" placeholder="0" oninput="onDataChange()">
@@ -161,7 +167,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 
 <div class="how-it-works">
   <strong>📌 計算邏輯</strong>
-  每次加碼/減碼時新增事件，填入<b>當下帳戶總損益</b>（已實現+未實現）。系統先用加碼前比例結算前段（含未實現），新錢才從乾淨基期進入下一段。
+  <b>期初累積獲利</b>＝看盤軟體一年前已結算、現已不顯示的舊獲利（手動記錄）。<br>總損益 = 期初累積獲利 + 已實現 + 未實現，期初獲利按最終權益比例分配。<br>每次加碼/減碼時新增事件，填入當下帳戶總損益（已實現+未實現），系統先用加碼前比例結算前段。
 </div>
 
 <div class="collapse-head" id="memHead" onclick="toggleSection('mem')">
@@ -295,6 +301,7 @@ async function loadFromGitHub(){
     const json = JSON.parse(b64decode(data.content));
     if(json && json.members){
       D = json;
+      document.getElementById('priorProfit').value = D.prior||0;
       document.getElementById('realizedProfit').value = D.realized||0;
       document.getElementById('unrealizedProfit').value = D.unrealized||0;
       openEvents.clear();
@@ -347,7 +354,7 @@ function schedulePush(){ clearTimeout(syncTimer); syncTimer = setTimeout(pushToG
 
 // ── 資料 ──────────────────────────────────────
 const DEFAULT = {
-  realized:0, unrealized:0,
+  prior:0, realized:0, unrealized:0,
   members:[{id:'m1',name:'強'},{id:'m2',name:'喬'},{id:'m3',name:'媛'}],
   events:[{
     id:'e1', date:today(), realizedAtEvent:0, isInitial:true,
@@ -374,6 +381,7 @@ function init(){
     if(ev.realizedAtEvent === undefined) ev.realizedAtEvent = 0;
     if(ev.unrealizedAtEvent === undefined) ev.unrealizedAtEvent = 0;
   });
+  document.getElementById('priorProfit').value = D.prior||0;
   document.getElementById('realizedProfit').value = D.realized||0;
   document.getElementById('unrealizedProfit').value = D.unrealized||0;
   renderAll();
@@ -386,12 +394,14 @@ function init(){
 }
 
 function onDataChange(){
+  D.prior = parseFloat(document.getElementById('priorProfit').value)||0;
   D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
   D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
   calcAndRender();
   schedulePush();
 }
 function saveAndRender(){
+  D.prior = parseFloat(document.getElementById('priorProfit').value)||0;
   D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
   D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
   localStorage.setItem('js_backup', JSON.stringify(D));
@@ -673,9 +683,10 @@ function updateSnapSum(ev){
 }
 
 function calcAndRender(){
+  var prior      = parseFloat(document.getElementById('priorProfit').value)||0;
   var realized   = parseFloat(document.getElementById('realizedProfit').value)||0;
   var unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
-  var totalProfit = realized + unrealized;
+  var totalProfit = prior + realized + unrealized;
 
   var events = D.events.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
 
