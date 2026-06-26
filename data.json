@@ -79,14 +79,6 @@
       ]
     },
     {
-      "id": "mpuqgo2g8gs",
-      "date": "2026-04-01",
-      "realizedAtEvent": 161963,
-      "isInitial": false,
-      "txns": [],
-      "unrealizedAtEvent": 80000
-    },
-    {
       "id": "mpv1g8cerkw",
       "date": "2026-05-22",
       "realizedAtEvent": 194506,
