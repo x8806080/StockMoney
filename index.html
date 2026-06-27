@@ -19,6 +19,8 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 .input-group input:focus{outline:none;border-color:var(--accent)}
 .input-group input::placeholder{color:rgba(255,255,255,.3)}
 .top-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.top-stats.four{grid-template-columns:repeat(5,1fr)}
+@media(max-width:700px){.top-stats.four{grid-template-columns:repeat(2,1fr)}}
 .stat-box{background:rgba(255,255,255,.07);border-radius:10px;padding:12px;text-align:center}
 .stat-label{font-size:.68rem;opacity:.5;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
 .stat-value{font-size:1.25rem;font-weight:700}
@@ -144,11 +146,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 </div>
 
 <div class="top-section">
-  <div class="top-inputs three">
-    <div class="input-group">
-      <label>期初累積獲利 ($)</label>
-      <input type="number" id="priorProfit" value="0" placeholder="0" oninput="onDataChange()">
-    </div>
+  <div class="top-inputs">
     <div class="input-group">
       <label>已實現損益 ($)</label>
       <input type="number" id="realizedProfit" value="0" placeholder="0" oninput="onDataChange()">
@@ -158,9 +156,11 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
       <input type="number" id="unrealizedProfit" value="0" placeholder="0" oninput="onDataChange()">
     </div>
   </div>
-  <div class="top-stats">
+  <div class="top-stats four">
+    <div class="stat-box"><div class="stat-label">累積獲利</div><div class="stat-value neutral" id="dispCumProfit">0</div></div>
     <div class="stat-box"><div class="stat-label">總損益</div><div class="stat-value neutral" id="dispTotal">0</div></div>
     <div class="stat-box"><div class="stat-label">帳戶本金</div><div class="stat-value neutral" id="dispPrincipal">0</div></div>
+    <div class="stat-box"><div class="stat-label">帳戶總值</div><div class="stat-value neutral" id="dispAccountValue">0</div></div>
     <div class="stat-box"><div class="stat-label">整體報酬率</div><div class="stat-value neutral" id="dispROI">0%</div></div>
   </div>
 </div>
@@ -184,7 +184,8 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
   <span class="ch-arrow open" id="evArrow">▶</span>
   <span class="ch-title">📅 加碼 / 減碼事件</span>
   <span class="badge" id="eventCount">0 個</span>
-  <button class="btn-add-member" onclick="event.stopPropagation();addEvent()">＋ 新增</button>
+  <button class="btn-add-member" onclick="event.stopPropagation();addEvent()">＋ 加減碼</button>
+  <button class="btn-add-member" style="background:#6366f1" onclick="event.stopPropagation();addSettle()">＋ 結算</button>
 </div>
 <div class="collapse-body open" id="evBody">
   <div id="eventsContainer"></div>
@@ -199,7 +200,8 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 </div>
 
 <div class="bottom-bar">
-  <button class="btn-add-ev" onclick="addEvent()">＋ 新增加碼 / 減碼事件</button>
+  <button class="btn-add-ev" onclick="addEvent()">＋ 加碼 / 減碼事件</button>
+  <button class="btn-add-ev" style="border-color:#6366f1;color:#6366f1" onclick="addSettle()">＋ 結算事件</button>
   <button class="btn-reset" onclick="resetData()">重置</button>
 </div>
 <p class="note">* 資料同步至 jsonbin.io，三台裝置共用</p>
@@ -301,8 +303,7 @@ async function loadFromGitHub(){
     const json = JSON.parse(b64decode(data.content));
     if(json && json.members){
       D = json;
-      document.getElementById('priorProfit').value = D.prior||0;
-      document.getElementById('realizedProfit').value = D.realized||0;
+          document.getElementById('realizedProfit').value = D.realized||0;
       document.getElementById('unrealizedProfit').value = D.unrealized||0;
       openEvents.clear();
       renderAll();
@@ -354,7 +355,7 @@ function schedulePush(){ clearTimeout(syncTimer); syncTimer = setTimeout(pushToG
 
 // ── 資料 ──────────────────────────────────────
 const DEFAULT = {
-  prior:0, realized:0, unrealized:0,
+  realized:0, unrealized:0,
   members:[{id:'m1',name:'強'},{id:'m2',name:'喬'},{id:'m3',name:'媛'}],
   events:[{
     id:'e1', date:today(), realizedAtEvent:0, isInitial:true,
@@ -381,7 +382,6 @@ function init(){
     if(ev.realizedAtEvent === undefined) ev.realizedAtEvent = 0;
     if(ev.unrealizedAtEvent === undefined) ev.unrealizedAtEvent = 0;
   });
-  document.getElementById('priorProfit').value = D.prior||0;
   document.getElementById('realizedProfit').value = D.realized||0;
   document.getElementById('unrealizedProfit').value = D.unrealized||0;
   renderAll();
@@ -394,14 +394,12 @@ function init(){
 }
 
 function onDataChange(){
-  D.prior = parseFloat(document.getElementById('priorProfit').value)||0;
   D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
   D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
   calcAndRender();
   schedulePush();
 }
 function saveAndRender(){
-  D.prior = parseFloat(document.getElementById('priorProfit').value)||0;
   D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
   D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
   localStorage.setItem('js_backup', JSON.stringify(D));
@@ -463,6 +461,72 @@ function renderEvents(){
   sorted.forEach(function(ev, idx){
     const isInit = !!ev.isInitial;
     const isOpen = openEvents.has(ev.id);
+
+    // ── 結算事件：簡化卡片（日期 + 金額 + 刪除）──
+    if(ev.isSettle){
+      var scard = document.createElement('div');
+      scard.className = 'event-card';
+      scard.style.borderLeft = '4px solid #6366f1';
+      scard.id = 'ecard-'+ev.id;
+
+      var shdr = document.createElement('div');
+      shdr.className = 'event-header';
+      shdr.onclick = function(){ toggleEvent(ev.id); };
+
+      var snum = document.createElement('div');
+      snum.className = 'event-num'; snum.style.background = '#6366f1'; snum.textContent = idx+1;
+
+      var sdate = document.createElement('input');
+      sdate.type = 'date'; sdate.className = 'event-date'; sdate.value = ev.date;
+      sdate.onclick = function(e){ e.stopPropagation(); };
+      sdate.oninput = function(e){ e.stopPropagation(); ev.date=this.value; saveAndRender(); };
+
+      var sdesc = document.createElement('div');
+      sdesc.className = 'event-desc';
+      sdesc.innerHTML = '<span style="color:#6366f1;font-weight:700">📌 結算 '+fmtS(ev.settleAmount||0)+'</span>';
+
+      var sarrow = document.createElement('div');
+      sarrow.className = 'ev-arrow'+(isOpen?' open':''); sarrow.textContent = '▶';
+
+      shdr.appendChild(snum); shdr.appendChild(sdate); shdr.appendChild(sdesc); shdr.appendChild(sarrow);
+      scard.appendChild(shdr);
+
+      var sbody = document.createElement('div');
+      sbody.className = 'event-body'+(isOpen?' open':'');
+
+      var sbox = document.createElement('div');
+      sbox.className = 'snap-box';
+      sbox.style.background = '#eef2ff';
+      sbox.style.borderColor = '#c7d2fe';
+      sbox.style.gridTemplateColumns = '1fr';
+      var scol = document.createElement('div');
+      var slbl = document.createElement('label');
+      slbl.textContent = '本期結算已實現損益 ($)';
+      slbl.style.color = '#4338ca';
+      var sinp = document.createElement('input');
+      sinp.type = 'number'; sinp.value = ev.settleAmount||0;
+      sinp.placeholder = '本期已實現損益金額';
+      sinp.style.borderColor = '#a5b4fc';
+      sinp.oninput = function(){ ev.settleAmount=parseFloat(this.value)||0; saveAndRender(); };
+      scol.appendChild(slbl); scol.appendChild(sinp);
+      sbox.appendChild(scol);
+      sbody.appendChild(sbox);
+
+      var shint = document.createElement('div');
+      shint.className = 'snap-hint';
+      shint.style.marginBottom = '14px';
+      shint.innerHTML = '此金額會自動加總到頂部「<b>累積獲利</b>」。<br>用來記錄超過一年、看盤軟體不再顯示的已實現損益。<br>純記錄加總，不參與分配計算。';
+      sbody.appendChild(shint);
+
+      var sdel = document.createElement('button');
+      sdel.className = 'btn-ev-del'; sdel.textContent = '🗑 刪除此結算';
+      sdel.onclick = function(){ removeEvent(ev.id); };
+      sbody.appendChild(sdel);
+
+      scard.appendChild(sbody);
+      c.appendChild(scard);
+      return;  // 結算事件處理完畢
+    }
 
     // 描述文字
     var parts = [];
@@ -647,6 +711,11 @@ function addEvent(){
   D.events.push(ev); openEvents.add(ev.id);
   saveAndRender(); renderEvents(); calcAndRender();
 }
+function addSettle(){
+  var ev = {id:uid(), date:today(), isSettle:true, settleAmount:0, txns:[]};
+  D.events.push(ev); openEvents.add(ev.id);
+  saveAndRender(); renderEvents(); calcAndRender();
+}
 function removeEvent(id){
   if(!confirm('確定刪除此事件？')) return;
   D.events = D.events.filter(function(e){return e.id!==id;});
@@ -683,12 +752,18 @@ function updateSnapSum(ev){
 }
 
 function calcAndRender(){
-  var prior      = parseFloat(document.getElementById('priorProfit').value)||0;
   var realized   = parseFloat(document.getElementById('realizedProfit').value)||0;
   var unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
-  var totalProfit = prior + realized + unrealized;
 
   var events = D.events.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+
+  // 累積獲利 = 所有結算事件的金額加總（純記錄，不參與分配）
+  var priorSum = 0;
+  D.events.forEach(function(ev){
+    if(ev.isSettle) priorSum += (ev.settleAmount||0);
+  });
+
+  var totalProfit = priorSum + realized + unrealized;
 
   var principal = {}, profit = {};
   D.members.forEach(function(m){ principal[m.id]=0; profit[m.id]=0; });
@@ -698,14 +773,15 @@ function calcAndRender(){
   for(var k=0; k<events.length; k++){
     var ev = events[k];
 
+    // 結算事件：純記錄，不參與分配，直接跳過計算
+    if(ev.isSettle) continue;
+
     if(!ev.isInitial && k>0){
       // Step A：用加碼前持股比例，結算前段損益
-      // 當下帳戶總損益 = 已實現 + 未實現（兩欄相加）
       var totalNow = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
       var totalDistSoFar = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
       var segProfit = totalNow - totalDistSoFar;
 
-      // 比例權重 = 本金 + 累計已分配獲利（權益），讓賺到的錢也參與下一段
       var shares = {}, totalShares = 0;
       D.members.forEach(function(m){
         var equity = principal[m.id] + profit[m.id];
@@ -743,10 +819,15 @@ function calcAndRender(){
 
   // 頂部統計
   var totalPrincipal = Object.keys(principal).reduce(function(s,id){return s+principal[id];},0);
+  var accountValue = totalPrincipal + totalProfit;  // 帳戶總值 = 本金 + 總損益
   var roi = totalPrincipal>0 ? totalProfit/totalPrincipal : 0;
   var tEl = document.getElementById('dispTotal');
   tEl.textContent = fmt(totalProfit); tEl.className = 'stat-value '+cc(totalProfit);
   document.getElementById('dispPrincipal').textContent = fmt(totalPrincipal);
+  var avEl = document.getElementById('dispAccountValue');
+  if(avEl) avEl.textContent = fmt(accountValue);
+  var cpEl = document.getElementById('dispCumProfit');
+  if(cpEl) cpEl.textContent = fmt(priorSum);
   var rEl = document.getElementById('dispROI');
   rEl.textContent = (roi*100).toFixed(2)+'%'; rEl.className = 'stat-value '+cc(roi);
 
