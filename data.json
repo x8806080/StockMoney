@@ -105,7 +105,13 @@
       "realizedAtEvent": 0,
       "unrealizedAtEvent": 160930,
       "isInitial": false,
-      "txns": []
+      "txns": [
+        {
+          "memberId": "m1",
+          "type": "deposit",
+          "amount": 0
+        }
+      ]
     }
   ],
   "prior": 161963
