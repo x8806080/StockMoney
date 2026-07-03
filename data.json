@@ -98,6 +98,14 @@
       "isSettle": true,
       "settleAmount": 161963,
       "txns": []
+    },
+    {
+      "id": "mr4ygxf6yxc",
+      "date": "2026-07-03",
+      "realizedAtEvent": 0,
+      "unrealizedAtEvent": 0,
+      "isInitial": false,
+      "txns": []
     }
   ],
   "prior": 161963
