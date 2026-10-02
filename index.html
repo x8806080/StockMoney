@@ -910,7 +910,12 @@ function calcAndRender(){
 }
 
 function resetData(){
-  if(!confirm('確定要重置所有資料？此操作也會清除雲端資料。')) return;
+  var ans = prompt('⚠️ 危險操作：這會清除所有成員、事件與雲端資料，無法復原。\n\n若確定，請輸入「重置」兩字：');
+  if(ans === null) return;              // 按取消
+  if(ans.trim() !== '重置'){
+    alert('輸入不符，已取消重置。');
+    return;
+  }
   D = JSON.parse(JSON.stringify(DEFAULT));
   openEvents.clear();
   document.getElementById('realizedProfit').value = 0;
