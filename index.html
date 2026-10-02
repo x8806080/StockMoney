@@ -167,7 +167,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
 
 <div class="how-it-works">
   <strong>📌 計算邏輯</strong>
-  <b>期初累積獲利</b>＝看盤軟體一年前已結算、現已不顯示的舊獲利（手動記錄）。<br>總損益 = 期初累積獲利 + 已實現 + 未實現，期初獲利按最終權益比例分配。<br>每次加碼/減碼時新增事件，填入當下帳戶總損益（已實現+未實現），系統先用加碼前比例結算前段。
+  <b>結算事件</b>：在某時點（如滿一年）把到此刻的累積總損益鎖定、按當時比例分給原持股人，歸入頂部「累積獲利」。<br>結算後，<b>頂部與加碼事件都只填「結算點之後」的損益</b>（看盤軟體重新計算的數字），不含結算前。<br>總損益 = 累積獲利 + 結算後至今損益。
 </div>
 
 <div class="collapse-head" id="memHead" onclick="toggleSection('mem')">
@@ -501,7 +501,7 @@ function renderEvents(){
       sbox.style.gridTemplateColumns = '1fr';
       var scol = document.createElement('div');
       var slbl = document.createElement('label');
-      slbl.textContent = '本期結算已實現損益 ($)';
+      slbl.textContent = '結算點累積總損益 ($)';
       slbl.style.color = '#4338ca';
       var sinp = document.createElement('input');
       sinp.type = 'number'; sinp.value = ev.settleAmount||0;
@@ -515,7 +515,7 @@ function renderEvents(){
       var shint = document.createElement('div');
       shint.className = 'snap-hint';
       shint.style.marginBottom = '14px';
-      shint.innerHTML = '此金額會自動加總到頂部「<b>累積獲利</b>」。<br>用來記錄超過一年、看盤軟體不再顯示的已實現損益。<br>純記錄加總，不參與分配計算。';
+      shint.innerHTML = '填入此結算點的<b>累積總損益</b>（結算前的已實現+未實現）。<br>系統會按當時比例分配給原持股人、鎖定起來，並歸入頂部「<b>累積獲利</b>」。<br>⚠️ 結算後的加碼事件，請填「<b>結算點之後</b>」的損益（看盤軟體重新計算的數字）。';
       sbody.appendChild(shint);
 
       var sdel = document.createElement('button');
@@ -582,37 +582,24 @@ function renderEvents(){
     } else {
       var snapBox = document.createElement('div');
       snapBox.className = 'snap-box';
+      snapBox.style.gridTemplateColumns = '1fr';
 
-      // 已實現損益欄
+      // 只需「已實現損益」欄（未實現不參與切段，最後按持股分）
       var colR = document.createElement('div');
       var lblR = document.createElement('label');
       lblR.textContent = '當下 已實現損益 ($)';
       var inpR = document.createElement('input');
       inpR.type = 'number'; inpR.value = ev.realizedAtEvent||0;
-      inpR.placeholder = '已實現';
-      inpR.oninput = function(){ ev.realizedAtEvent=parseFloat(this.value)||0; updateSnapSum(ev); saveAndRender(); };
+      inpR.placeholder = '結算後至今的已實現損益';
+      inpR.oninput = function(){ ev.realizedAtEvent=parseFloat(this.value)||0; saveAndRender(); };
       colR.appendChild(lblR); colR.appendChild(inpR);
-
-      // 未實現損益欄
-      var colU = document.createElement('div');
-      var lblU = document.createElement('label');
-      lblU.textContent = '當下 未實現損益 ($)';
-      var inpU = document.createElement('input');
-      inpU.type = 'number'; inpU.value = ev.unrealizedAtEvent||0;
-      inpU.placeholder = '未實現';
-      inpU.oninput = function(){ ev.unrealizedAtEvent=parseFloat(this.value)||0; updateSnapSum(ev); saveAndRender(); };
-      colU.appendChild(lblU); colU.appendChild(inpU);
-
-      snapBox.appendChild(colR); snapBox.appendChild(colU);
+      snapBox.appendChild(colR);
       body.appendChild(snapBox);
 
-      // 合計提示
       var sumHint = document.createElement('div');
       sumHint.className = 'snap-hint';
-      sumHint.id = 'snapsum-' + ev.id;
       sumHint.style.marginBottom = '14px';
-      var sumVal = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
-      sumHint.innerHTML = '當下帳戶總損益合計：<b>' + fmtS(sumVal) + '</b><br>前段損益 = 此合計 − 上段已分配，含未實現先結算給原持股人，新錢從乾淨基期進場。';
+      sumHint.innerHTML = '只填<b>已實現損益</b>（結算點之後至今的累計）。<br>前段 = 此數字 − 上段已分配，用加碼前比例分給原持股人。<br>未實現損益不填這裡，最後統一按最終持股比例分配。';
       body.appendChild(sumHint);
     }
 
@@ -744,12 +731,6 @@ function renderSegBlock(label, segProfit, shares, totalShares, isOngoing){
     +'<div class="seg-title">'+label+' · <b>'+fmtS(segProfit)+'</b></div>'+rows+'</div>';
 }
 
-function updateSnapSum(ev){
-  var el = document.getElementById('snapsum-'+ev.id);
-  if(!el) return;
-  var sum = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
-  el.innerHTML = '當下帳戶總損益合計：<b>' + fmtS(sum) + '</b><br>前段損益 = 此合計 − 上段已分配，含未實現先結算給原持股人，新錢從乾淨基期進場。';
-}
 
 function calcAndRender(){
   var realized   = parseFloat(document.getElementById('realizedProfit').value)||0;
@@ -757,30 +738,52 @@ function calcAndRender(){
 
   var events = D.events.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
 
-  // 累積獲利 = 所有結算事件的金額加總（純記錄，不參與分配）
-  var priorSum = 0;
-  D.events.forEach(function(ev){
-    if(ev.isSettle) priorSum += (ev.settleAmount||0);
-  });
-
-  var totalProfit = priorSum + realized + unrealized;
-
   var principal = {}, profit = {};
   D.members.forEach(function(m){ principal[m.id]=0; profit[m.id]=0; });
 
-  var settled = {};  // evId → {segProfit, shares, totalShares}
+  var settled = {};  // evId → {segProfit, shares, totalShares, isSettle}
+  var priorSum = 0;  // 所有結算事件鎖定的累積獲利總和
+  var settledByMember = {};  // 各人被結算鎖定的累積獲利（顯示用，還原分配損益）
+  D.members.forEach(function(m){ settledByMember[m.id]=0; });
 
   for(var k=0; k<events.length; k++){
     var ev = events[k];
 
-    // 結算事件：純記錄，不參與分配，直接跳過計算
-    if(ev.isSettle) continue;
+    if(ev.isSettle){
+      // ── 結算事件 ──
+      // 1. 用結算金額當「當下損益」，結算前段並分配給原持股人
+      // 2. 把已分配獲利併入本金（權益帶著走，比例不變）
+      // 3. profit 歸零 → 之後的加碼事件從乾淨基準重新算
+      var settleTotal = ev.settleAmount||0;
+      var distBefore = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
+      var segP = settleTotal - distBefore;
+
+      var sh = {}, shTot = 0;
+      D.members.forEach(function(m){
+        var eq = principal[m.id] + profit[m.id];
+        sh[m.id] = eq; shTot += eq;
+      });
+      settled[ev.id] = {segProfit:segP, shares:sh, totalShares:shTot, isSettle:true};
+      if(shTot>0){
+        D.members.forEach(function(m){ profit[m.id] += segP*(sh[m.id]/shTot); });
+      }
+
+      // 鎖定：profit 併入本金、歸零，priorSum 接手記錄
+      D.members.forEach(function(m){
+        settledByMember[m.id] += profit[m.id];
+        principal[m.id] += profit[m.id];
+        profit[m.id] = 0;
+      });
+      priorSum += settleTotal;
+      continue;
+    }
 
     if(!ev.isInitial && k>0){
-      // Step A：用加碼前持股比例，結算前段損益
-      var totalNow = (ev.realizedAtEvent||0) + (ev.unrealizedAtEvent||0);
+      // Step A：只用「已實現損益」切段（精確，不受浮盈回檔影響）
+      // realizedAtEvent = 結算點之後至今的已實現損益
+      var realizedNow = ev.realizedAtEvent||0;
       var totalDistSoFar = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
-      var segProfit = totalNow - totalDistSoFar;
+      var segProfit = realizedNow - totalDistSoFar;
 
       var shares = {}, totalShares = 0;
       D.members.forEach(function(m){
@@ -789,7 +792,7 @@ function calcAndRender(){
         totalShares += equity;
       });
 
-      settled[ev.id] = {segProfit:segProfit, shares:shares, totalShares:totalShares};
+      settled[ev.id] = {segProfit:segProfit, shares:shares, totalShares:totalShares, isSettle:false};
 
       if(totalShares>0){
         D.members.forEach(function(m){ profit[m.id] += segProfit*(shares[m.id]/totalShares); });
@@ -804,9 +807,9 @@ function calcAndRender(){
     });
   }
 
-  // 最後一段：當前總損益 − 已分配（含未實現）
+  // 最後一段「已實現」：頂部已實現 − 結算後已分配（只切已實現）
   var totalDistAll = Object.keys(profit).reduce(function(s,id){return s+profit[id];},0);
-  var lastSeg = totalProfit - totalDistAll;
+  var lastSeg = realized - totalDistAll;  // realized = 結算後至今的已實現
   var lastShares = {}, lastTotal = 0;
   D.members.forEach(function(m){
     var equity = principal[m.id] + profit[m.id];
@@ -817,13 +820,31 @@ function calcAndRender(){
     D.members.forEach(function(m){ profit[m.id] += lastSeg*(lastShares[m.id]/lastTotal); });
   }
 
+  // 未實現損益：最後按「最終權益比例」一次分配（浮盈不切段，誰最終持股多就算誰的）
+  var unrealizedByMember = {};
+  var finalShares = {}, finalTotal = 0;
+  D.members.forEach(function(m){
+    var equity = principal[m.id] + profit[m.id];
+    finalShares[m.id] = equity;
+    finalTotal += equity;
+  });
+  D.members.forEach(function(m){
+    unrealizedByMember[m.id] = finalTotal>0 ? unrealized*(finalShares[m.id]/finalTotal) : 0;
+  });
+
+  // 總損益 = 累積獲利（結算鎖定）+ 結算後至今已實現 + 未實現
+  var currentSeg = realized + unrealized;  // 結算後至今的損益（顯示用）
+  var totalProfit = priorSum + currentSeg;
+
   // 頂部統計
+  // 純本金 = 現有本金 − 被結算併入的累積獲利（還原顯示）
   var totalPrincipal = Object.keys(principal).reduce(function(s,id){return s+principal[id];},0);
-  var accountValue = totalPrincipal + totalProfit;  // 帳戶總值 = 本金 + 總損益
-  var roi = totalPrincipal>0 ? totalProfit/totalPrincipal : 0;
+  var realPrincipal = totalPrincipal - priorSum;
+  var accountValue = realPrincipal + totalProfit;  // 帳戶總值 = 純本金 + 總損益
+  var roi = realPrincipal>0 ? totalProfit/realPrincipal : 0;
   var tEl = document.getElementById('dispTotal');
   tEl.textContent = fmt(totalProfit); tEl.className = 'stat-value '+cc(totalProfit);
-  document.getElementById('dispPrincipal').textContent = fmt(totalPrincipal);
+  document.getElementById('dispPrincipal').textContent = fmt(realPrincipal);
   var avEl = document.getElementById('dispAccountValue');
   if(avEl) avEl.textContent = fmt(accountValue);
   var cpEl = document.getElementById('dispCumProfit');
@@ -839,8 +860,11 @@ function calcAndRender(){
     if(ev.isInitial){ el.innerHTML=''; return; }
     var html = '';
     var s = settled[ev.id];
-    if(s) html += renderSegBlock('✅ 前段損益結算（加碼前比例）', s.segProfit, s.shares, s.totalShares, false);
-    if(ev.id===lastEvId) html += renderSegBlock('⏳ 當前段損益（進行中）', lastSeg, lastShares, lastTotal, true);
+    if(s) html += renderSegBlock('✅ 前段已實現結算（加碼前比例）', s.segProfit, s.shares, s.totalShares, false);
+    if(ev.id===lastEvId){
+      html += renderSegBlock('⏳ 當前段已實現（進行中）', lastSeg, lastShares, lastTotal, true);
+      html += renderSegBlock('💰 未實現損益（按最終權益分）', unrealized, finalShares, finalTotal, true);
+    }
     el.innerHTML = html;
   });
 
@@ -856,14 +880,20 @@ function calcAndRender(){
   tbody.innerHTML = '';
   var sumDep=0, sumPft=0, sumTotal=0;
   D.members.forEach(function(m){
-    var dep=deposits[m.id]||0, pft=profit[m.id]||0, rem=principal[m.id]||0;
+    // principal 含被結算併入的獲利，還原：純本金 = principal − 鎖定獲利
+    var lockedP = settledByMember[m.id]||0;
+    var dep = deposits[m.id]||0;                        // 純投入本金
+    var realP = (profit[m.id]||0) + lockedP;            // 已實現分配（結算後 + 鎖定）
+    var unrealP = unrealizedByMember[m.id]||0;          // 未實現分配（按最終權益）
+    var pft = realP + unrealP;                          // 總分配損益
+    var accountTotal = dep + pft;                       // 帳戶總值
     var roi2 = dep>0 ? pft/dep*100 : 0;
-    sumDep+=dep; sumPft+=pft; sumTotal+=(rem+pft);
+    sumDep+=dep; sumPft+=pft; sumTotal+=accountTotal;
     var tr = document.createElement('tr');
     tr.innerHTML = '<td class="fn">'+m.name+'</td>'
       +'<td style="color:var(--muted)">'+fmt(dep)+'</td>'
       +'<td class="fp '+cc(pft)+'">'+fmtS(pft)+'</td>'
-      +'<td class="ft">'+fmt(rem+pft)+'</td>'
+      +'<td class="ft">'+fmt(accountTotal)+'</td>'
       +'<td class="'+cc(roi2)+'" style="font-size:.85rem">'+(roi2>=0?'+':'')+roi2.toFixed(2)+'%</td>';
     tbody.appendChild(tr);
   });
