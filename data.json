@@ -122,7 +122,7 @@
       "txns": [
         {
           "memberId": "m2",
-          "type": "deposit",
+          "type": "withdraw",
           "amount": 0
         }
       ]
