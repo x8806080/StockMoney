@@ -11,7 +11,14 @@ body{font-family:-apple-system,"Helvetica Neue",sans-serif;background:var(--bg);
 .container{max-width:900px;margin:0 auto}
 h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padding:16px 0 20px}
 .top-section{background:var(--primary);border-radius:16px;padding:20px;margin-bottom:16px;color:white}
-.top-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.top-inputs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:580px){.top-inputs{grid-template-columns:1fr 1fr}}
+.compare-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+.cmp-box{background:rgba(255,255,255,.07);border-radius:10px;padding:12px;text-align:center}
+.cmp-label{font-size:.68rem;opacity:.6;margin-bottom:4px;letter-spacing:.04em}
+.cmp-value{font-size:1.25rem;font-weight:700}
+.cmp-diff{font-size:.72rem;margin-top:2px;opacity:.85}
+@media(max-width:580px){.compare-row{grid-template-columns:1fr}}
 .top-inputs.three{grid-template-columns:1fr 1fr 1fr}
 @media(max-width:580px){.top-inputs.three{grid-template-columns:1fr}}
 .input-group label{display:block;font-size:.72rem;opacity:.55;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
@@ -155,6 +162,14 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
       <label>未實現損益 ($)</label>
       <input type="number" id="unrealizedProfit" value="0" placeholder="0" oninput="onDataChange()">
     </div>
+    <div class="input-group">
+      <label>今日 0050 股價</label>
+      <input type="number" id="today0050" value="0" placeholder="0" oninput="onDataChange()">
+    </div>
+    <div class="input-group">
+      <label>今日 00981A 股價</label>
+      <input type="number" id="today0981" value="0" placeholder="0" oninput="onDataChange()">
+    </div>
   </div>
   <div class="top-stats four">
     <div class="stat-box"><div class="stat-label">累積獲利</div><div class="stat-value neutral" id="dispCumProfit">0</div></div>
@@ -162,6 +177,22 @@ h1{text-align:center;font-size:1.25rem;font-weight:700;color:var(--primary);padd
     <div class="stat-box"><div class="stat-label">帳戶本金</div><div class="stat-value neutral" id="dispPrincipal">0</div></div>
     <div class="stat-box"><div class="stat-label">帳戶總值</div><div class="stat-value neutral" id="dispAccountValue">0</div></div>
     <div class="stat-box"><div class="stat-label">整體報酬率</div><div class="stat-value neutral" id="dispROI">0%</div></div>
+  </div>
+  <div class="compare-row">
+    <div class="cmp-box">
+      <div class="cmp-label">你們實際報酬率</div>
+      <div class="cmp-value" id="cmpSelf">0%</div>
+    </div>
+    <div class="cmp-box">
+      <div class="cmp-label">同期買 0050</div>
+      <div class="cmp-value" id="cmp0050">—</div>
+      <div class="cmp-diff" id="cmp0050diff"></div>
+    </div>
+    <div class="cmp-box">
+      <div class="cmp-label">同期買 00981A</div>
+      <div class="cmp-value" id="cmp0981">—</div>
+      <div class="cmp-diff" id="cmp0981diff"></div>
+    </div>
   </div>
 </div>
 
@@ -305,6 +336,8 @@ async function loadFromGitHub(){
       D = json;
           document.getElementById('realizedProfit').value = D.realized||0;
       document.getElementById('unrealizedProfit').value = D.unrealized||0;
+      document.getElementById('today0050').value = D.today0050||0;
+      document.getElementById('today0981').value = D.today0981||0;
       openEvents.clear();
       renderAll();
     }
@@ -355,7 +388,7 @@ function schedulePush(){ clearTimeout(syncTimer); syncTimer = setTimeout(pushToG
 
 // ── 資料 ──────────────────────────────────────
 const DEFAULT = {
-  realized:0, unrealized:0,
+  realized:0, unrealized:0, today0050:0, today0981:0,
   members:[{id:'m1',name:'強'},{id:'m2',name:'喬'},{id:'m3',name:'媛'}],
   events:[{
     id:'e1', date:today(), realizedAtEvent:0, isInitial:true,
@@ -384,6 +417,8 @@ function init(){
   });
   document.getElementById('realizedProfit').value = D.realized||0;
   document.getElementById('unrealizedProfit').value = D.unrealized||0;
+  document.getElementById('today0050').value = D.today0050||0;
+  document.getElementById('today0981').value = D.today0981||0;
   renderAll();
 
   if(GH_REPO && GH_TOKEN){
@@ -396,12 +431,16 @@ function init(){
 function onDataChange(){
   D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
   D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
+  D.today0050 = parseFloat(document.getElementById('today0050').value)||0;
+  D.today0981 = parseFloat(document.getElementById('today0981').value)||0;
   calcAndRender();
   schedulePush();
 }
 function saveAndRender(){
   D.realized = parseFloat(document.getElementById('realizedProfit').value)||0;
   D.unrealized = parseFloat(document.getElementById('unrealizedProfit').value)||0;
+  D.today0050 = parseFloat(document.getElementById('today0050').value)||0;
+  D.today0981 = parseFloat(document.getElementById('today0981').value)||0;
   localStorage.setItem('js_backup', JSON.stringify(D));
   calcAndRender();
   schedulePush();
@@ -616,6 +655,31 @@ function renderEvents(){
     addTxnBtn.className = 'btn-add-txn'; addTxnBtn.textContent = '＋ 新增一筆';
     addTxnBtn.onclick = function(){ addTxn(ev.id); };
     body.appendChild(addTxnBtn);
+
+    // ── ETF 當日股價（0050 / 00981A）用於報酬率比對 ──
+    var etfBox = document.createElement('div');
+    etfBox.className = 'snap-box';
+    etfBox.style.cssText = 'background:#fef3f2;border-color:#fecaca;margin-top:12px;grid-template-columns:1fr 1fr';
+    var c50 = document.createElement('div');
+    var l50 = document.createElement('label'); l50.textContent = '當日 0050 股價'; l50.style.color='#b45309';
+    var i50 = document.createElement('input');
+    i50.type='number'; i50.value=ev.price0050||0; i50.placeholder='0050';
+    i50.style.borderColor='#fcd34d';
+    i50.oninput = function(){ ev.price0050=parseFloat(this.value)||0; saveAndRender(); };
+    c50.appendChild(l50); c50.appendChild(i50);
+    var c98 = document.createElement('div');
+    var l98 = document.createElement('label'); l98.textContent = '當日 00981A 股價'; l98.style.color='#b45309';
+    var i98 = document.createElement('input');
+    i98.type='number'; i98.value=ev.price0981||0; i98.placeholder='00981A';
+    i98.style.borderColor='#fcd34d';
+    i98.oninput = function(){ ev.price0981=parseFloat(this.value)||0; saveAndRender(); };
+    c98.appendChild(l98); c98.appendChild(i98);
+    etfBox.appendChild(c50); etfBox.appendChild(c98);
+    body.appendChild(etfBox);
+    var etfHint = document.createElement('div');
+    etfHint.className='snap-hint'; etfHint.style.marginTop='8px';
+    etfHint.innerHTML='填此事件日的 0050 / 00981A 收盤價。<br>系統會把此事件的加減碼金額，依當日價換算成 ETF 股數，比對「同時間買 ETF」的報酬率。';
+    body.appendChild(etfHint);
 
     var sres = document.createElement('div');
     sres.id = 'sres-'+ev.id;
@@ -852,6 +916,45 @@ function calcAndRender(){
   var rEl = document.getElementById('dispROI');
   rEl.textContent = (roi*100).toFixed(2)+'%'; rEl.className = 'stat-value '+cc(roi);
 
+  // ── ETF 報酬率比對（0050 / 00981A）──
+  // 把每筆加減碼金額依當日 ETF 價換算股數，到今日市值算報酬率
+  var today50 = parseFloat(document.getElementById('today0050').value)||0;
+  var today98 = parseFloat(document.getElementById('today0981').value)||0;
+  function etfReturn(priceKey, todayPrice){
+    var shares=0, netInvest=0, missing=false;
+    events.forEach(function(ev){
+      if(ev.isSettle) return;  // 結算事件無資金進出
+      var price = ev[priceKey]||0;
+      var evAmt = ev.txns.reduce(function(s,t){return s + (t.type==='deposit'?t.amount:-t.amount);},0);
+      if(evAmt!==0 && price<=0) missing=true;  // 有金額卻沒填價
+      if(price>0){
+        shares += evAmt/price;
+        netInvest += evAmt;
+      }
+    });
+    if(todayPrice<=0 || netInvest<=0) return null;
+    var curValue = shares*todayPrice;
+    var roiPct = (curValue-netInvest)/netInvest*100;
+    return {roi:roiPct, missing:missing};
+  }
+
+  var selfRoiPct = roi*100;
+  document.getElementById('cmpSelf').textContent = selfRoiPct.toFixed(2)+'%';
+  document.getElementById('cmpSelf').className = 'cmp-value '+cc(selfRoiPct);
+
+  function showCmp(valId, diffId, result){
+    var vEl = document.getElementById(valId), dEl = document.getElementById(diffId);
+    if(!result){ vEl.textContent='—'; vEl.className='cmp-value'; dEl.textContent='填股價後顯示'; dEl.style.color='rgba(255,255,255,.4)'; return; }
+    vEl.textContent = result.roi.toFixed(2)+'%';
+    vEl.className = 'cmp-value '+cc(result.roi);
+    var diff = selfRoiPct - result.roi;
+    dEl.textContent = (diff>=0?'你贏 +':'你輸 ')+diff.toFixed(2)+'%';
+    dEl.style.color = diff>=0 ? 'var(--accent)' : 'var(--danger)';
+    if(result.missing) dEl.textContent += '（部分事件未填價）';
+  }
+  showCmp('cmp0050','cmp0050diff', etfReturn('price0050', today50));
+  showCmp('cmp0981','cmp0981diff', etfReturn('price0981', today98));
+
   // 段落顯示
   var lastEvId = events.length>0 ? events[events.length-1].id : null;
   events.forEach(function(ev){
@@ -920,6 +1023,8 @@ function resetData(){
   openEvents.clear();
   document.getElementById('realizedProfit').value = 0;
   document.getElementById('unrealizedProfit').value = 0;
+  document.getElementById('today0050').value = 0;
+  document.getElementById('today0981').value = 0;
   renderAll(); pushToGitHub();
 }
 
