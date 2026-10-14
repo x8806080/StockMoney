@@ -35,7 +35,8 @@
           "type": "deposit",
           "amount": 200000
         }
-      ]
+      ],
+      "price0050": 75.45
     },
     {
       "id": "mpupzrso4qt",
