@@ -130,7 +130,8 @@
           "type": "withdraw",
           "amount": 1500
         }
-      ]
+      ],
+      "price0050": 91.8
     }
   ],
   "prior": 161963,
