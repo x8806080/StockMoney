@@ -59,7 +59,8 @@
           "type": "deposit",
           "amount": 10000
         }
-      ]
+      ],
+      "price0050": 66.95
     },
     {
       "id": "mpuq2v9n2ga",
